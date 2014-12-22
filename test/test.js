@@ -153,6 +153,20 @@
           $httpBackend.flush();
           $rootScope.postedItem.should.eql({id: 3, name: "My new patient!"});
         });
+        it('should create a DELETE route for each resource item, and perform the DELETE', function() {
+          $rootScope.getOne('patients', 1);
+          $httpBackend.flush();
+          $rootScope.item.should.eql({id: 1, name: "Joe Patient1"});
+
+          $rootScope.delete('patients', 1);
+          $httpBackend.flush();
+
+          (function() {
+            $rootScope.getOne('patients', 1);
+            $httpBackend.flush();
+          }).should.throw(/No item found/)
+
+        });
 
         it('should return the newest version of an item if you update it in the DB', function() {
           $rootScope.getOne('patients', 1);

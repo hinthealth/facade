@@ -23,4 +23,8 @@ angular.module('mockApp', [])
         $scope.postedItem = item;
       });
     };
+
+    $scope.delete = function(resource, id) {
+      $http.delete('/api/provider/' + resource + '/' + id).success(function() {});
+    };
   }]);

@@ -93,9 +93,7 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
 
   function createRestRoutes(resource) {
     createIndexRoute(resource);
-    createItemIdRoutes(resource);
-    createPatchRoutes(resource);
-    createPostRoutes(resource);
+    createSingleItemRoutes(resource);
   }
 
   function createIndexRoute(resource) {
@@ -144,41 +142,48 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
       });
   }
 
-  function createItemIdRoutes(resource) {
-    var allItems = getAllItems(resource);
-    _.each(allItems, function(item) {
-      createItemIdRoute(resource, item.id);
-    });
+  function createDeleteRoute(resource, id) {
+    var headers = {};
+    NachoBackend.backend.whenDELETE(resource.url + '/' + id)
+      .respond(function(method, url, data, headers) {
+        data = data || {};
+
+        // Perform the delete on the db
+        var item = getTable(resource).delete(id)
+
+        //     [status, data,                       headers, status text ]
+        return [200,    item,   {},     'OK']
+      });
   }
 
-  function createPatchRoutes(resource) {
+  function createSingleItemRoutes(resource) {
+    var routeFunctions = [
+      createItemIdRoute,
+      createPatchRoute,
+      createPostRoute,
+      createDeleteRoute
+    ];
     var allItems = getAllItems(resource);
-    _.each(allItems, function(item) {
-      createPatchRoute(resource, item.id);
+    _.each(routeFunctions, function(routeFunction) {
+      _.each(allItems, function(item) {
+        routeFunction(resource, item.id);
+      })
     });
   }
-
-  function createPostRoutes(resource) {
-    var allItems = getAllItems(resource);
-    _.each(allItems, function(item) {
-      createPostRoute(resource, item.id);
-    });
-  }
-
 
   // ** Db Helpers ** //
 
-  function getTable(name) {
-    checkForTableExistence(name);
-    return NachoBackend.db[name];
+  function getTable(resource) {
+    checkForTableExistence(resource.name);
+    return NachoBackend.db[resource.name];
   }
 
   function getAllItems(resource) {
-    return getTable(resource.name).getAll();
+    return getTable(resource).getAll();
   }
 
   function getOneItem(resource, id) {
-    return getTable(resource.name).find(id);
+    return getTable(resource).find(id);
   }
 
 
@@ -190,7 +195,7 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
       name: opts.name,
       add: function(resourceInstance) {
         checkForResourceId(resourceInstance);
-        getTable(this.name).create(resourceInstance);
+        getTable(this).create(resourceInstance);
         return resourceInstance;
       }
     };
@@ -213,6 +218,16 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
         if (!item) {
           throw new Error("No item found in " + name + " table with id of " + id)
         }
+        return item;
+      },
+      delete: function(id) {
+        checkForIdToFindOn(id);
+        var id = JSON.stringify(id);
+        var item = storage[id];
+        if (!item) {
+          throw new Error("No item found in " + name + " table with id of " + id + ". So can't delete it.");
+        }
+        storage[id] = null;
         return item;
       }
     }
