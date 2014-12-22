@@ -38,6 +38,8 @@
   function createRestRoutes(resource) {
     createIndexRoute(resource);
     createItemIdRoutes(resource);
+    createPatchRoutes(resource);
+    createPostRoutes(resource);
   }
 
   function createIndexRoute(resource) {
@@ -58,6 +60,34 @@
       });
   }
 
+  function createPatchRoute(resource, id) {
+    var headers = {};
+    NachoBackend.backend.whenPUT(resource.url + '/' + id)
+      .respond(function(method, url, data, headers) {
+        data = data || {};
+        var item = getOneItem(resource, id);
+        // Perform the patch on the db object
+        _.assign(item, JSON.parse(data));
+
+        //     [status, data,                       headers, status text ]
+        return [200,    item,   {},     'OK']
+      });
+  }
+
+  function createPostRoute(resource) {
+    var headers = {};
+    NachoBackend.backend.whenPOST(resource.url)
+      .respond(function(method, url, data, headers) {
+        data = data || {};
+
+        // Perform the POST on the db
+        var item = resource.add(JSON.parse(data));
+
+        //     [status, data,                       headers, status text ]
+        return [200,    item,   {},     'OK']
+      });
+  }
+
   function createItemIdRoutes(resource) {
     var allItems = getAllItems(resource);
     _.each(allItems, function(item) {
@@ -65,10 +95,25 @@
     });
   }
 
+  function createPatchRoutes(resource) {
+    var allItems = getAllItems(resource);
+    _.each(allItems, function(item) {
+      createPatchRoute(resource, item.id);
+    });
+  }
+
+  function createPostRoutes(resource) {
+    var allItems = getAllItems(resource);
+    _.each(allItems, function(item) {
+      createPostRoute(resource, item.id);
+    });
+  }
+
 
   // ** Db Helpers ** //
 
   function getTable(name) {
+    checkForTableExistence(name);
     return NachoBackend.db[name];
   }
 
@@ -89,7 +134,7 @@
       name: opts.name,
       add: function(resourceInstance) {
         checkForResourceId(resourceInstance);
-        getTable(this.name).put(resourceInstance);
+        getTable(this.name).create(resourceInstance);
         return resourceInstance;
       }
     };
@@ -101,7 +146,7 @@
       getAll: function() {
         return _.map(storage);
       },
-      put: function(resourceInstance) {
+      create: function(resourceInstance) {
         checkForResourceId(resourceInstance);
         var id = resourceInstance.id;
         storage[JSON.stringify(id)] = resourceInstance;
@@ -158,6 +203,13 @@
         "$httpBackend not detected. Either add it as an option when initializing, or set the" +
         " attribute directly on NachoBackend via NachoBackend.backend = $httpBackend"
       );
+    }
+  }
+
+  function checkForTableExistence(name) {
+    var table = NachoBackend.db[name];
+    if (!table) {
+      throw new Error("There doesnt appear to be a table called " + name);
     }
   }
 

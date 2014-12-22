@@ -117,6 +117,7 @@
 
         NachoBackend.initialize();
 
+        createController();
       });
       it('should throw if it doesnt detect $httpBackend', function() {
         NachoBackend.backend = undefined;
@@ -125,8 +126,7 @@
         }).should.throw(/httpBackend/);
       });
       describe('REST routes', function() {
-        it('should create an index route for all created resources', function() {
-          var controller = createController();
+        it('should create an GET index route for all created resources', function() {
           $rootScope.getList('patients');
           $rootScope.getList('practices');
           $httpBackend.flush();
@@ -134,8 +134,7 @@
           $rootScope.patients.should.eql(patientList);
           $rootScope.practices.should.eql(practiceList);
         });
-        it('should create a "one" route for each item of a resource', function() {
-          var controller = createController();
+        it('should create a GET/id route for each item of a resource', function() {
           $rootScope.getOne('patients', 1);
           $httpBackend.flush();
           $rootScope.item.should.eql({id: 1, name: "Joe Patient1"});
@@ -143,6 +142,28 @@
           $rootScope.getOne('patients', 2);
           $httpBackend.flush();
           $rootScope.item.should.eql({id: 2, name: "Joe Patient2"});
+        });
+        it('should create a PATCH route for each resource item, and perform the patch', function() {
+          $rootScope.patch('patients', 1, {name: "Crazy new name!"});
+          $httpBackend.flush();
+          $rootScope.patchedItem.should.eql({id: 1, name: "Crazy new name!"});
+        });
+        it('should create a POST route for each resource item, and perform the POST', function() {
+          $rootScope.post('patients', {id: 3, name: "My new patient!"});
+          $httpBackend.flush();
+          $rootScope.postedItem.should.eql({id: 3, name: "My new patient!"});
+        });
+
+        it('should return the newest version of an item if you update it in the DB', function() {
+          $rootScope.getOne('patients', 1);
+          $httpBackend.flush();
+          $rootScope.item.should.eql({id: 1, name: "Joe Patient1"});
+
+          NachoBackend.db.patient.find(1).name = "New Name";
+
+          $rootScope.getOne('patients', 1);
+          $httpBackend.flush();
+          $rootScope.item.should.eql({id: 1, name: "New Name"});
         });
       })
     });

@@ -11,4 +11,16 @@ angular.module('mockApp', [])
         $scope.item = item;
       });
     };
+
+    $scope.patch = function(resource, id, params) {
+      $http.put('/api/provider/' + resource + '/' + id, params).success(function(item) {
+        $scope.patchedItem = item;
+      });
+    };
+
+    $scope.post = function(resource, params) {
+      $http.post('/api/provider/' + resource, params).success(function(item) {
+        $scope.postedItem = item;
+      });
+    };
   }]);
