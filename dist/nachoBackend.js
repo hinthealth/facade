@@ -82,6 +82,13 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
     });
   };
 
+  NachoBackend.clear = function() {
+    this.resources = {};
+    this.db = {};
+    this.backend = undefined;
+    backendIsInitialized = false;
+  }
+
 
   // PRIVATE FUNCTIONS //
 

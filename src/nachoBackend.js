@@ -26,6 +26,13 @@
     });
   };
 
+  NachoBackend.clear = function() {
+    this.resources = {};
+    this.db = {};
+    this.backend = undefined;
+    backendIsInitialized = false;
+  }
+
 
   // PRIVATE FUNCTIONS //
 

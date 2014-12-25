@@ -22,10 +22,7 @@
 
   afterEach(function() {
     // To clear things out between test runs;
-    NachoBackend.resources = {};
-    NachoBackend.db = {};
-    NachoBackend.backend = undefined;
-    NachoBackend.isInitialized = false;
+    NachoBackend.clear();
   });
   describe('NachoBackend', function() {
     describe('#resource', function() {
@@ -184,6 +181,11 @@
           $rootScope.item.should.eql({id: 1, name: "New Name"});
         });
       })
+      describe('#define', function() {
+        it('should have a function to take all of the routes, child routes, etc', function() {
+
+        });
+      });
     });
   });
   describe('the Resource object', function() {
@@ -307,7 +309,7 @@
 
         $rootScope.verifiedPatient.verified.should.eql(true);
       });
-      it('should be able to place routes on individual items', function() {
+      xit('should be able to change the status and response value of custom routes', function() {
 
       });
       xdescribe('short cut route methods', function() {
@@ -329,6 +331,14 @@
         it('should have a shorcut onItem method', function() {
           // Something like patientResource.onItem.get('')
         });
+      });
+    });
+    xdescribe('prepareError', function() {
+      it('should be able to setup an error response', function() {
+
+      });
+      it('should only throw the error once, and then go back to success', function() {
+
       });
     });
   });
