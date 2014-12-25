@@ -27,4 +27,16 @@ angular.module('mockApp', [])
     $scope.delete = function(resource, id) {
       $http.delete('/api/provider/' + resource + '/' + id).success(function() {});
     };
+
+    $scope.verifyAll = function() {
+      $http.post('/api/provider/patients/verify').success(function(patients) {
+        $scope.patients = patients;
+      });
+    };
+
+    $scope.verifyPatient = function(id) {
+      $http.post('/api/provider/patients/' + id + '/verify').success(function(verifiedPatient) {
+        $scope.verifiedPatient = verifiedPatient;
+      });
+    };
   }]);

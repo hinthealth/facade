@@ -4,10 +4,28 @@
 
 (function () {
 'use strict';
+
+  // Mock app setup;
+  var $httpBackend, $rootScope, createController, patient1, patient2, practice1, practice2;
+  var patientList, practiceList;
+
+  beforeEach(module('mockApp'))
+  beforeEach(inject(function($injector) {
+    $httpBackend = $injector.get(('$httpBackend'));
+    $rootScope = $injector.get('$rootScope');
+    var $controller = $injector.get('$controller');
+
+    createController = function() {
+      return $controller('mockController', {$scope: $rootScope});
+    }
+  }));
+
   afterEach(function() {
     // To clear things out between test runs;
     NachoBackend.resources = {};
     NachoBackend.db = {};
+    NachoBackend.backend = undefined;
+    NachoBackend.isInitialized = false;
   });
   describe('NachoBackend', function() {
     describe('#resource', function() {
@@ -82,20 +100,6 @@
       });
     });
     describe('#initialize', function() {
-      var $httpBackend, $rootScope, createController, patient1, patient2, practice1, practice2;
-      var patientList, practiceList;
-
-      beforeEach(module('mockApp'))
-      beforeEach(inject(function($injector) {
-        $httpBackend = $injector.get(('$httpBackend'));
-        $rootScope = $injector.get('$rootScope');
-        var $controller = $injector.get('$controller');
-
-        createController = function() {
-          return $controller('mockController', {$scope: $rootScope});
-        }
-      }));
-
       beforeEach(function() {
         var patientResource = NachoBackend.resource({
           name: 'patient',
@@ -184,25 +188,147 @@
   });
   describe('the Resource object', function() {
     describe('#add', function() {
-      var resource;
+      var patientResource;
       beforeEach(function() {
-        resource = NachoBackend.resource({
+        patientResource = NachoBackend.resource({
           name: 'patient',
           url: '/api/provider/patients'
         });
+        createController();
+        NachoBackend.initialize({backend: $httpBackend});
       });
       it("should take an object and add it to the database for that resource", function() {
-        resource.add({id: 1, name: "Joe Bob"});
+        patientResource.add({id: 1, name: "Joe Bob"});
         NachoBackend.db.patient.find(1).should.eql({id: 1, name: "Joe Bob"});
       });
-    });
-    xdescribe('#resource', function() {
-      it('should be able to nest resources', function() {
+      it("should auto add routes for that patient", function() {
+        (function() {
+          $rootScope.getOne('patients', 2);
+          $httpBackend.flush();
+        }).should.throw(/Unexpected request/);
+
+        patientResource.add({id: 2, name: "New Patient"});
+
+        (function() {
+          $rootScope.getOne('patients', 2);
+          $httpBackend.flush();
+        }).should.not.throw();
+
+        $rootScope.item.should.eql({id: 2, name: "New Patient"});
 
       });
     });
-    xdescribe('#addRoute', function() {
-      it('should be able to add custom routes', function() {
+    describe('#resource', function() {
+      it('should be able to nest urls', function() {
+        var parentResource = NachoBackend.resource({
+          name: 'patient',
+          url: '/api/provider/patients'
+        });
+
+        var childResource = parentResource.resource({
+          name: 'patientCharges',
+          url: '/charges'
+        });
+        childResource.url.should.eql('/api/provider/patients/charges');
+      });
+      it('should be able to nest urls many levels deep', function() {
+        var parentResource = NachoBackend.resource({
+          name: 'patient',
+          url: '/api/provider/patients'
+        });
+
+        var childResource = parentResource.resource({
+          name: 'patientCharges',
+          url: '/charges'
+        });
+
+        var grandChildResource = childResource.resource({
+          name: 'patientChargesPayments',
+          url: '/payments'
+        });
+
+        grandChildResource.url.should.eql('/api/provider/patients/charges/payments');
+      });
+    });
+    describe('#addRoute', function() {
+      var patientResource;
+      beforeEach(function() {
+        patientResource = NachoBackend.resource({
+          name: 'patient',
+          url: '/api/provider/patients'
+        });
+        patient1 = patientResource.add({id: 1, name: "Joe Patient1", verified: false});
+        patientResource.add({id: 2, name: "Joe Patient2", verified: false});
+
+        NachoBackend.backend = $httpBackend;
+        NachoBackend.initialize();
+
+        createController();
+      });
+
+      it('should be able to add custom routes for a collection', function() {
+        patientResource.route({
+          method: 'POST',
+          route: '/verify',
+          callback: function(requestData, collection, headers) {
+            _.each(collection, function(item) {
+              item.verified = true;
+            })
+          }
+        });
+
+        $rootScope.getOne('patients', patient1.id);
+        $httpBackend.flush();
+        $rootScope.item.verified.should.eql(false);
+
+        $rootScope.verifyAll();
+        $httpBackend.flush();
+
+        _.each($rootScope.patients, function(patient) {
+          patient.verified.should.eql(true);
+        });
+      });
+      it('should be able to add custom routes on routes with IDs', function() {
+        patientResource.route({
+          method:'POST',
+          route:'/verify',
+          callback: function(data, item, headers) {
+            item.verified = true;
+          },
+          onItem: true
+        });
+
+        $rootScope.getOne('patients', patient1.id);
+        $httpBackend.flush();
+        $rootScope.item.verified.should.eql(false);
+
+        $rootScope.verifyPatient(patient1.id);
+        $httpBackend.flush();
+
+        $rootScope.verifiedPatient.verified.should.eql(true);
+      });
+      it('should be able to place routes on individual items', function() {
+
+      });
+      xdescribe('short cut route methods', function() {
+        it('should have a shortcut GET method', function() {
+
+        });
+        it('should have a shortcut POST method', function() {
+
+        });
+        it('should have a shortcut PATCH method', function() {
+
+        });
+        it('should have a shortcut PUT method', function() {
+
+        });
+        it('should have a shortcut DELETE method', function() {
+
+        });
+        it('should have a shorcut onItem method', function() {
+          // Something like patientResource.onItem.get('')
+        });
       });
     });
   });
