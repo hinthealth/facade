@@ -151,7 +151,7 @@
   `callback`: This is meant to let you "perform the action" of the route. Very similar to whatever your real backend might do for this route. The callback is passed the request data, and then the appropriate database object. Which is the item if it's an item route (eg. patients/3/verify), or the collection if it's a colleciton route (eg. patients/verify)
 
 
-  ** Creating special responses (and errors) **
+  **Creating special responses (and errors)**
   Facade lets you alter the response of any route as needed. Typical use of this would be for simulating errors.
 
   Just find the route, and then do what you will!
