@@ -103,6 +103,28 @@
         resource.url.should.eql("/api/provider/patients");
       });
     });
+    xdescribe("#clear", function() {
+      it("should clear out the db", function() {
+
+      });
+      it("should clear out the routes", function() {
+
+      });
+      it("should clear out the resources", function() {
+
+      });
+    });
+    xdescribe("#reset", function() {
+      it("should reset database objects to the way the were at initialization", function() {
+
+      });
+      it("should reset routes to the way they were at initialization", function() {
+
+      });
+      it("should reset resources to the way the were at initialization", function() {
+
+      });
+    });
     xdescribe("#showRoutes", function() {
       beforeEach(function() {
         var resource = Facade.resource({

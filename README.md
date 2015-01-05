@@ -73,7 +73,8 @@
 
   afterEach(function() {
     // To keep tests running independently.
-    Facade.reset();
+    Facade.reset(); 
+    // OR... Facade.clear() depending on your workflow. See below for more info.
   });
 
 ```
@@ -111,6 +112,22 @@
   var DB = Facade.db;
   var patient = DB.patient.find('pat-2J8K');
   // Note it's DB.patient because we set the name as "patient" when creating the resource.
+  ```
+
+  **Keeping tests Independent**
+  Depending on your workflow, there are two ways to keep each test run independent.
+
+  ```
+  Facade.clear();
+  // clear will actually just set the db/routes/resources to empty objects.
+  // Use this when you actually add resources/objects in the beforeEach of your tests, and thus they are run every time.
+  ```
+
+  Or...
+  ```
+  Facade.reset();
+  // reset brings things back to the way they were at initialization.
+  // Use this if you set up all your resources/routes in some mocks file that only gets included (and thus run) once, and isn't run each time in your tests.
   ```
 
 
