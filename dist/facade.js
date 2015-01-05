@@ -58,10 +58,15 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
   'use strict'
   window.Facade = {};
 
+  var backendIsInitialized = false;
+
   Facade.resources = {};
   Facade.db = {};
-  var NBRoutes = {};
-  var backendIsInitialized = false;
+  var facadeRoutes = {};
+
+  var originalResources = {}
+  var originalDb = {}
+  var originalRoutes = {};
 
   // PUBLIC FUNCTIONS //
   Facade.resource = function(opts) {
@@ -72,7 +77,7 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
     this.db[opts.name] = buildTable(opts.name);
 
     // Create a slot for the resources routes in the master route list;
-    NBRoutes[opts.name] = [];
+    facadeRoutes[opts.name] = [];
 
     // Add resource to master list
     return this.resources[opts.name] = buildResource(opts);
@@ -84,20 +89,34 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
     _.each(this.resources, function(resource) {
       createRestRoutes(resource);
     });
+    createCopiesOfMasterLists();
   };
+
+  Facade.reset = function() {
+    Facade.resources = _.clone(originalResources, true);
+    Facade.db = _.clone(originalDb, true);
+    facadeRoutes = _.clone(originalRoutes, true);
+    backendIsInitialized = false;
+  };
+
+  function createCopiesOfMasterLists() {
+    originalResources = _.clone(Facade.resources, true);
+    originalDb = _.clone(Facade.db, true);
+    originalRoutes = _.clone(facadeRoutes, true);
+  }
 
   Facade.clear = function() {
     this.resources = {};
     this.db = {};
-    NBRoutes = {};
+    facadeRoutes = {};
     this.backend = undefined;
     backendIsInitialized = false;
-  }
+  };
 
   Facade.findRoute = function(method, url) {
     var routeObj;
     var fullRoute = [method, url].join(' ');
-    var exists = _.any(NBRoutes, function(resourceRoutes) {
+    var exists = _.any(facadeRoutes, function(resourceRoutes) {
       return Boolean(resourceRoutes[fullRoute]) && (routeObj = resourceRoutes[fullRoute]);
     });
     if (!exists) {
@@ -282,7 +301,7 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
     var prefix = opts.resource.url;
     var fullUrl = opts.item ? prefix + '/' + opts.item.id + opts.route : prefix + opts.route;
     var fullRoute = [opts.method, fullUrl].join(' ')
-    NBRoutes[opts.resource.name][fullRoute] = buildRoute(fullRoute);
+    facadeRoutes[opts.resource.name][fullRoute] = buildRoute(fullRoute);
   }
 
 
