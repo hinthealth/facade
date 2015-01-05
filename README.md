@@ -116,7 +116,7 @@
 
   ```
   Facade.clear();
-  // clear will actually just set the db/routes/resources to empty objects.
+  // clear will actually just set the db/routes/resources to empty objects. Note, it also clears out the `.backend` definition. So you should also be setting $httpBackend in a beforeEach.
   // Use this when you actually add resources/objects in the beforeEach of your tests, and thus they are run every time.
   ```
 
