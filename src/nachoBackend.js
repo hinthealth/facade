@@ -4,6 +4,7 @@
 
   NachoBackend.resources = {};
   NachoBackend.db = {};
+  var NBRoutes = {};
   var backendIsInitialized = false;
 
   // PUBLIC FUNCTIONS //
@@ -13,6 +14,9 @@
 
     // Create 'table' in the 'database'
     this.db[opts.name] = buildTable(opts.name);
+
+    // Create a slot for the resources routes in the master route list;
+    NBRoutes[opts.name] = [];
 
     // Add resource to master list
     return this.resources[opts.name] = buildResource(opts);
@@ -29,8 +33,22 @@
   NachoBackend.clear = function() {
     this.resources = {};
     this.db = {};
+    NBRoutes = {};
     this.backend = undefined;
     backendIsInitialized = false;
+  }
+
+  NachoBackend.findRoute = function(method, url) {
+    var routeObj;
+    var fullRoute = [method, url].join(' ');
+    var exists = _.any(NBRoutes, function(resourceRoutes) {
+      return Boolean(resourceRoutes[fullRoute]) && (routeObj = resourceRoutes[fullRoute]);
+    });
+    if (!exists) {
+      throw new Error("The route " + fullRoute + " does not exist");
+    }
+
+    return routeObj;
   }
 
 
@@ -40,77 +58,17 @@
   // ** Routes ** //
 
   function createRestRoutes(resource) {
-    createCollectionRoute(resource);
+    createCollectionRoutesFor(resource);
     createAllItemRoutes(resource);
   }
 
-  function createCollectionRoute(resource) {
-    var headers = {};
-    NachoBackend.backend.whenGET(resource.url)
-      .respond(function(method, url, data, headers) {
-        //     [status, data,                       headers, status text ]
-        return [200,    getAllItems(resource), {},     'OK']
-      });
-  }
 
-  function createItemIdRoute(resource, id) {
-    var headers = {};
-    NachoBackend.backend.whenGET(resource.url + '/' + id)
-      .respond(function(method, url, data, headers) {
-        //     [status, data,                       headers, status text ]
-        return [200,    getOneItem(resource, id),   {},     'OK']
-      });
-  }
-
-  function createPatchRoute(resource, id) {
-    var headers = {};
-    NachoBackend.backend.whenPUT(resource.url + '/' + id)
-      .respond(function(method, url, data, headers) {
-        data = data || {};
-        var item = getOneItem(resource, id);
-        // Perform the patch on the db object
-        _.assign(item, JSON.parse(data));
-
-        //     [status, data,                       headers, status text ]
-        return [200,    item,   {},     'OK']
-      });
-  }
-
-  function createPostRoute(resource) {
-    var headers = {};
-    NachoBackend.backend.whenPOST(resource.url)
-      .respond(function(method, url, data, headers) {
-        data = data || {};
-
-        // Perform the POST on the db
-        var item = resource.add(JSON.parse(data));
-
-        //     [status, data,                       headers, status text ]
-        return [200,    item,   {},     'OK']
-      });
-  }
-
-  function createDeleteRoute(resource, id) {
-    var headers = {};
-    NachoBackend.backend.whenDELETE(resource.url + '/' + id)
-      .respond(function(method, url, data, headers) {
-        data = data || {};
-
-        // Perform the delete on the db
-        var item = getTable(resource).delete(id)
-
-        //     [status, data,                       headers, status text ]
-        return [200,    item,   {},     'OK']
-      });
-  }
-
-  function routeCreators() {
-    return  [
-      createItemIdRoute,
-      createPatchRoute,
-      createPostRoute,
-      createDeleteRoute
-    ];
+  function createCollectionRoutesFor(resource) {
+    _.each(collectionRouteCreators(), function(routeCreator) {
+      var opts = {resource: resource, method: routeCreator.method}
+      routeCreator.createWith(opts);
+      storeRoute(opts);
+    })
   }
 
   function createAllItemRoutes(resource) {
@@ -121,19 +79,126 @@
   }
 
   function createItemRoutesFor(resource, item) {
-    _.each(routeCreators(), function(routeCreator) {
-      routeCreator(resource, item.id);
+    _.each(itemRouteCreators(), function(routeCreator) {
+      var opts = {resource: resource, item: item, method: routeCreator.method}
+      routeCreator.createWith(opts);
+      storeRoute(opts);
     });
   }
+
+  function createItemIdRoute(opts) {
+    var headers = {};
+    NachoBackend.backend.whenGET(opts.resource.url + '/' + opts.item.id)
+      .respond(function(method, url, data, headers) {
+        var route = NachoBackend.findRoute(method, url);
+        var response = route.getSpecialResponseOr(function() {
+          var item = getOneItem(opts.resource, opts.item.id);
+          return [200, JSON.stringify(item), {}, 'OK'];
+        })
+        // TODO: Add check that the response is an array with 4 items;
+        return response;
+      });
+  }
+
+
+  function createPutRoute(opts) {
+    var headers = {};
+    NachoBackend.backend.whenPUT(opts.resource.url + '/' + opts.item.id)
+      .respond(function(method, url, data, headers) {
+        data = data || {};
+        var route = NachoBackend.findRoute(method, url);
+        var response = route.getSpecialResponseOr(function() {
+          var item = getOneItem(opts.resource, opts.item.id);
+          // Perform the patch on the db object
+          _.assign(item, JSON.parse(data));
+          return [200, JSON.stringify(item), headers, 'OK']
+        })
+
+        return response;
+      });
+  }
+
+
+  function createDeleteRoute(opts) {
+    var headers = {};
+    NachoBackend.backend.whenDELETE(opts.resource.url + '/' + opts.item.id)
+      .respond(function(method, url, data, headers) {
+        data = data || {};
+        var route = NachoBackend.findRoute(method, url);
+
+        // Perform the delete on the db
+        var response = route.getSpecialResponseOr(function() {
+          var item = getTable(opts.resource).delete(opts.item.id);
+          return [200, JSON.stringify(item), {}, 'OK'];
+        })
+
+        return response;
+      });
+  }
+
+  function createCreateRoute(opts) {
+    var headers = {};
+    NachoBackend.backend.whenPOST(opts.resource.url)
+      .respond(function(method, url, data, headers) {
+        data = data || {};
+        var route = NachoBackend.findRoute(method, url);
+
+        // Perform the POST on the db
+        var response = route.getSpecialResponseOr(function() {
+          var item = opts.resource.addItem(JSON.parse(data));
+          return [200, JSON.stringify(item), {}, 'OK'];
+        })
+
+        return response;
+      });
+  }
+
+  function createIndexRoute(opts) {
+    var headers = {};
+    NachoBackend.backend.whenGET(opts.resource.url)
+      .respond(function(method, url, data, headers) {
+        var route = NachoBackend.findRoute(method, url);
+
+        var response = route.getSpecialResponseOr(function() {
+          return [200,    getAllItems(opts.resource), {},     'OK']
+        })
+
+        return response;
+      });
+  }
+
+
+  function itemRouteCreators() {
+    return  [
+      {createWith: createItemIdRoute, method: 'GET'},
+      {createWith: createPutRoute, method: 'PUT'},
+      {createWith: createDeleteRoute, method: 'DELETE'}
+    ];
+  }
+
+  function collectionRouteCreators() {
+    return  [
+      {createWith: createCreateRoute, method: 'POST'},
+      {createWith: createIndexRoute, method: 'GET'}
+    ];
+  }
+
 
   function createCustomRouteForItem(opts) {
     var fullUrl = opts.resource.url + '/' + opts.item.id + opts.route;
     NachoBackend.backend.when(opts.method, fullUrl).respond(function(method, url, requestData, headers) {
       requestData = requestData || {};
+      var route = NachoBackend.findRoute(method, url);
 
-      _.isFunction(opts.callback) && opts.callback(requestData, opts.item);
-      //     [status, data,   headers, status text ]
-      return [200,    opts.item,   {},     'OK']
+      if (!route.hasSpecialResponse()) {
+        _.isFunction(opts.callback) && opts.callback(requestData, opts.item);
+      }
+
+      var response = route.getSpecialResponseOr(function() {
+        return [200, JSON.stringify(opts.item), {}, 'OK'];
+      });
+
+      return response;
     });
   }
 
@@ -142,26 +207,26 @@
     NachoBackend.backend.when(opts.method, fullUrl).respond(function(method, url, requestData, headers) {
       requestData = requestData || {};
       var collection = getTable(opts.resource).getAll();
+      var route = NachoBackend.findRoute(method, url);
 
-      _.isFunction(opts.callback) && opts.callback(requestData, collection);
-      //     [status, data,   headers, status text ]
-      return [200,    collection,   {},     'OK']
+      if (!route.hasSpecialResponse()) {
+        _.isFunction(opts.callback) && opts.callback(requestData, collection);
+      }
+
+      var response = route.getSpecialResponseOr(function() {
+        return [200, JSON.stringify(collection), {}, 'OK'];
+      });
+
+      return response;
     });
   }
 
-  // ** Db Helpers ** //
-
-  function getTable(resource) {
-    checkForTableExistence(resource.name);
-    return NachoBackend.db[resource.name];
-  }
-
-  function getAllItems(resource) {
-    return getTable(resource).getAll();
-  }
-
-  function getOneItem(resource, id) {
-    return getTable(resource).find(id);
+  function storeRoute(opts) {
+    opts.route = opts.route || '';
+    var prefix = opts.resource.url;
+    var fullUrl = opts.item ? prefix + '/' + opts.item.id + opts.route : prefix + opts.route;
+    var fullRoute = [opts.method, fullUrl].join(' ')
+    NBRoutes[opts.resource.name][fullRoute] = buildRoute(fullRoute);
   }
 
 
@@ -174,7 +239,7 @@
     return {
       url: opts.url,
       name: opts.name,
-      add: function(item) {
+      addItem: function(item) {
         checkForResourceId(item);
         getTable(this).create(item);
         if (backendIsInitialized) {
@@ -183,8 +248,7 @@
         return item;
       },
       resource: buildResource,
-      route: function(opts) {
-        // Check for method and route and callback
+      addRoute: function(opts) {
         opts = opts || {};
         checkForRequiredRouteArgs(opts);
         opts.resource = this;
@@ -193,12 +257,38 @@
           _.each(allItems, function(item) {
             opts.item = item;
             createCustomRouteForItem(opts);
+            storeRoute(opts);
           });
         }else {
           createCustomRouteForCollection(opts);
+          storeRoute(opts);
         }
       }
     };
+  }
+
+  function buildRoute(fullRoute) {
+    var specialResponses = [];
+    return {
+      fullRoute: fullRoute,
+      nextResponse: function(status, data) {
+        specialResponses.push({status: status, data: data});
+      },
+      getSpecialResponse: function() {
+        return specialResponses.shift();
+      },
+      hasSpecialResponse: function() {
+        return Boolean(specialResponses.length);
+      },
+      getSpecialResponseOr: function(callback) {
+        if (this.hasSpecialResponse()) {
+          var response = this.getSpecialResponse();
+          return [response.status, JSON.stringify(response.data), {}, 'OK'];
+        }else {
+          return _.isFunction(callback) && callback()
+        }
+      }
+    }
   }
 
   function buildTable(name) {
@@ -212,13 +302,14 @@
         var id = item.id;
         storage[JSON.stringify(id)] = item;
       },
-      find: function(id) {
+      find: function(id, opts) {
         checkForIdToFindOn(id);
+        opts = opts || {};
         var item = storage[JSON.stringify(id)];
         if (!item) {
           throw new Error("No item found in " + name + " table with id of " + id)
         }
-        return item;
+        return opts.wrap ? itemWrapper(item, getResource(name)) : item;
       },
       delete: function(id) {
         checkForIdToFindOn(id);
@@ -232,6 +323,45 @@
       }
     }
   }
+
+
+  // ** Db Helpers ** //
+
+  function getTable(resource) {
+    var table = NachoBackend.db[resource.name];
+    if (!table) {
+      throw new Error("There doesnt appear to be a table called " + resource.name);
+    }
+    return table;
+  }
+
+  function getAllItems(resource) {
+    return getTable(resource).getAll();
+  }
+
+  function getOneItem(resource, id, opts) {
+    opts = opts || {};
+    return getTable(resource).find(id, opts);
+  }
+
+  function itemWrapper(item, resource) {
+    item = _.extend({}, item);
+    item.showUrl = function() {
+      return resource.url + '/' + item.id;
+    }
+    return item;
+  }
+
+  // ** Resource Helpers ** //
+
+  function getResource(name) {
+    var resource = NachoBackend.resources[name];
+    if (!resource) {
+      throw new Error("There doesnt appear to be a resource called " + name);
+    }
+    return resource;
+  }
+
 
 
   // ** Error Handling ** //
@@ -277,13 +407,6 @@
     }
   }
 
-  function checkForTableExistence(name) {
-    var table = NachoBackend.db[name];
-    if (!table) {
-      throw new Error("There doesnt appear to be a table called " + name);
-    }
-  }
-
   function checkForRequiredRouteArgs(opts) {
     var httpVerbs = ['GET', 'POST', 'PATCH', 'PUT', 'HEAD', 'DELETE'];
     if (!_.contains(httpVerbs, opts.method)) {
@@ -292,6 +415,10 @@
     if (!_.isString(opts.route)) {
       throw new Error("You must supply a route. eg: '/my_route' ");
     }
+  }
+
+  function checkForUrlExistence(method, url) {
+    var inquiredRoute = [method, url].join(' ');
   }
 
 }).call(this);
