@@ -56,15 +56,15 @@ K[B]=false,K[D]=K[$]=K[T]=K[F]=K[W]=K[q]=K[z]=K[P]=true;var L={leading:false,max
 var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G._=Y, define(function(){return Y})):H&&J?Q?(J.exports=Y)._=Y:H._=Y:G._=Y}).call(this);
 (function() {
   'use strict'
-  window.NachoBackend = {};
+  window.Facade = {};
 
-  NachoBackend.resources = {};
-  NachoBackend.db = {};
+  Facade.resources = {};
+  Facade.db = {};
   var NBRoutes = {};
   var backendIsInitialized = false;
 
   // PUBLIC FUNCTIONS //
-  NachoBackend.resource = function(opts) {
+  Facade.resource = function(opts) {
     opts = opts || {};
     checkForResourceErrors(opts);
 
@@ -78,7 +78,7 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
     return this.resources[opts.name] = buildResource(opts);
   };
 
-  NachoBackend.initialize = function(opts) {
+  Facade.initialize = function(opts) {
     checkForHttpBackend(opts);
     backendIsInitialized = true;
     _.each(this.resources, function(resource) {
@@ -86,7 +86,7 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
     });
   };
 
-  NachoBackend.clear = function() {
+  Facade.clear = function() {
     this.resources = {};
     this.db = {};
     NBRoutes = {};
@@ -94,7 +94,7 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
     backendIsInitialized = false;
   }
 
-  NachoBackend.findRoute = function(method, url) {
+  Facade.findRoute = function(method, url) {
     var routeObj;
     var fullRoute = [method, url].join(' ');
     var exists = _.any(NBRoutes, function(resourceRoutes) {
@@ -138,23 +138,20 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
     _.each(itemRouteCreators(), function(routeCreator) {
       var opts = {resource: resource, item: item, method: routeCreator.method}
       routeCreator.createWith(opts);
-      // A bit of a hack so that storing create (POST) routes
-      // doesn't add the 'id' to the stored route.
-      opts.item = routeCreator.method === "POST" ? undefined : item;
       storeRoute(opts);
     });
   }
 
   function createItemIdRoute(opts) {
     var headers = {};
-    NachoBackend.backend.whenGET(opts.resource.url + '/' + opts.item.id)
+    Facade.backend.whenGET(opts.resource.url + '/' + opts.item.id)
       .respond(function(method, url, data, headers) {
-        var route = NachoBackend.findRoute(method, url);
+        var route = Facade.findRoute(method, url);
         var response = route.getSpecialResponseOr(function() {
           var item = getOneItem(opts.resource, opts.item.id);
           return [200, JSON.stringify(item), {}, 'OK'];
         })
-        // Do a check that response is an array with 4 items;
+        // TODO: Add check that the response is an array with 4 items;
         return response;
       });
   }
@@ -162,10 +159,10 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
 
   function createPutRoute(opts) {
     var headers = {};
-    NachoBackend.backend.whenPUT(opts.resource.url + '/' + opts.item.id)
+    Facade.backend.whenPUT(opts.resource.url + '/' + opts.item.id)
       .respond(function(method, url, data, headers) {
         data = data || {};
-        var route = NachoBackend.findRoute(method, url);
+        var route = Facade.findRoute(method, url);
         var response = route.getSpecialResponseOr(function() {
           var item = getOneItem(opts.resource, opts.item.id);
           // Perform the patch on the db object
@@ -180,10 +177,10 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
 
   function createDeleteRoute(opts) {
     var headers = {};
-    NachoBackend.backend.whenDELETE(opts.resource.url + '/' + opts.item.id)
+    Facade.backend.whenDELETE(opts.resource.url + '/' + opts.item.id)
       .respond(function(method, url, data, headers) {
         data = data || {};
-        var route = NachoBackend.findRoute(method, url);
+        var route = Facade.findRoute(method, url);
 
         // Perform the delete on the db
         var response = route.getSpecialResponseOr(function() {
@@ -197,10 +194,10 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
 
   function createCreateRoute(opts) {
     var headers = {};
-    NachoBackend.backend.whenPOST(opts.resource.url)
+    Facade.backend.whenPOST(opts.resource.url)
       .respond(function(method, url, data, headers) {
         data = data || {};
-        var route = NachoBackend.findRoute(method, url);
+        var route = Facade.findRoute(method, url);
 
         // Perform the POST on the db
         var response = route.getSpecialResponseOr(function() {
@@ -214,9 +211,9 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
 
   function createIndexRoute(opts) {
     var headers = {};
-    NachoBackend.backend.whenGET(opts.resource.url)
+    Facade.backend.whenGET(opts.resource.url)
       .respond(function(method, url, data, headers) {
-        var route = NachoBackend.findRoute(method, url);
+        var route = Facade.findRoute(method, url);
 
         var response = route.getSpecialResponseOr(function() {
           return [200,    getAllItems(opts.resource), {},     'OK']
@@ -245,9 +242,9 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
 
   function createCustomRouteForItem(opts) {
     var fullUrl = opts.resource.url + '/' + opts.item.id + opts.route;
-    NachoBackend.backend.when(opts.method, fullUrl).respond(function(method, url, requestData, headers) {
+    Facade.backend.when(opts.method, fullUrl).respond(function(method, url, requestData, headers) {
       requestData = requestData || {};
-      var route = NachoBackend.findRoute(method, url);
+      var route = Facade.findRoute(method, url);
 
       if (!route.hasSpecialResponse()) {
         _.isFunction(opts.callback) && opts.callback(requestData, opts.item);
@@ -263,10 +260,10 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
 
   function createCustomRouteForCollection(opts) {
     var fullUrl = opts.resource.url + opts.route;
-    NachoBackend.backend.when(opts.method, fullUrl).respond(function(method, url, requestData, headers) {
+    Facade.backend.when(opts.method, fullUrl).respond(function(method, url, requestData, headers) {
       requestData = requestData || {};
       var collection = getTable(opts.resource).getAll();
-      var route = NachoBackend.findRoute(method, url);
+      var route = Facade.findRoute(method, url);
 
       if (!route.hasSpecialResponse()) {
         _.isFunction(opts.callback) && opts.callback(requestData, collection);
@@ -387,7 +384,7 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
   // ** Db Helpers ** //
 
   function getTable(resource) {
-    var table = NachoBackend.db[resource.name];
+    var table = Facade.db[resource.name];
     if (!table) {
       throw new Error("There doesnt appear to be a table called " + resource.name);
     }
@@ -414,7 +411,7 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
   // ** Resource Helpers ** //
 
   function getResource(name) {
-    var resource = NachoBackend.resources[name];
+    var resource = Facade.resources[name];
     if (!resource) {
       throw new Error("There doesnt appear to be a resource called " + name);
     }
@@ -429,7 +426,7 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
     if (!_.isString(opts.name) ) {
       throw new Error("You must provide a name for the resource");
     }
-    if (NachoBackend.resources[opts.name]) {
+    if (Facade.resources[opts.name]) {
       throw new Error(
         "A resource named " + opts.name + " already exists. Please choose a different name."
       );
@@ -437,7 +434,7 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
     if (!_.isString(opts.url) ) {
       throw new Error("You must provide a url for the " + opts.name + " resource");
     }
-    var urls = _.pluck(NachoBackend.resources, 'url');
+    var urls = _.pluck(Facade.resources, 'url');
     if ( _.find(urls, function(url) { return url === opts.url; }) ) {
       throw new Error("The url " + opts.url + " is already taken. Please change one");
     }
@@ -457,11 +454,11 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
 
   function checkForHttpBackend(opts) {
     opts = opts || {};
-    NachoBackend.backend = NachoBackend.backend || opts.backend || {};
-    if (!_.isFunction(NachoBackend.backend.whenGET)) {
+    Facade.backend = Facade.backend || opts.backend || {};
+    if (!_.isFunction(Facade.backend.whenGET)) {
       throw new Error(
         "$httpBackend not detected. Either add it as an option when initializing, or set the" +
-        " attribute directly on NachoBackend via NachoBackend.backend = $httpBackend"
+        " attribute directly on Facade via Facade.backend = $httpBackend"
       );
     }
   }

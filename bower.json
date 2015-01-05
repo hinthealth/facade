@@ -1,11 +1,11 @@
 {
-  "name": "nachoBackend",
-  "version": "0.0.0",
+  "name": "facade",
+  "version": "0.1.0",
   "authors": [
     "Blake West <bwest87@gmail.com>"
   ],
   "description": "Front end testing helpers!",
-  "main": "src/behave.js",
+  "main": "src/facade.js",
   "moduleType": [
     "globals"
   ],
@@ -13,7 +13,8 @@
     "testing",
     "front-end",
     "js",
-    "angular"
+    "angular",
+    "httpBackend"
   ],
   "license": "Private",
   "private": false,

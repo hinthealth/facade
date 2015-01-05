@@ -6,15 +6,15 @@ var paths = {
   vendor: [
        'bower_components/lodash/dist/lodash.min.js',
       ],
-  src: 'src/nachoBackend.js'
+  src: 'src/facade.js'
 };
 
 gulp.task('default', function() {
   var src = paths.vendor.concat(paths.src);
   return gulp.src(src)
-    .pipe(concat('nachoBackend.js'))
+    .pipe(concat('facade.js'))
     .pipe(gulp.dest('./dist/'))
-    .pipe(concat('nachoBackend.min.js'))
+    .pipe(concat('facade.min.js'))
     .pipe(uglify())
     .pipe(gulp.dest('./dist/'));
 });

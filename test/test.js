@@ -1,5 +1,5 @@
 /* jshint immed: false */
-/* globals describe, beforeEach, it, xdescribe, templates, NachoBackend */
+/* globals describe, beforeEach, it, xdescribe, templates, Facade */
 /* quotmark: true*/
 
 (function () {
@@ -22,12 +22,12 @@
 
   afterEach(function() {
     // To clear things out between test runs;
-    NachoBackend.clear();
+    Facade.clear();
   });
-  describe("NachoBackend", function() {
+  describe("Facade", function() {
     describe("#resource", function() {
       it("should return a resource with the passed in attributes", function() {
-        var resource = NachoBackend.resource({
+        var resource = Facade.resource({
           name: "patient",
           url: "/api/provider/patients"
         });
@@ -36,38 +36,38 @@
       });
       it("should create a table in the database for that resource", function() {
         (function() {
-          NachoBackend.db.patient
+          Facade.db.patient
         }).should.be.undefined;
 
-        NachoBackend.resource({
+        Facade.resource({
           name: "patient",
           url: "/api/provider/patients"
         });
 
-        NachoBackend.db.patient.should.be.an.Object;
+        Facade.db.patient.should.be.an.Object;
       });
       it("should require a name", function() {
         (function() {
-          NachoBackend.resource({
+          Facade.resource({
             url: "/api/provider/patients"
           });
         }).should.throw(/name/);
       });
       it("should require a url", function() {
         (function() {
-          NachoBackend.resource({
+          Facade.resource({
             name: "patient"
           });
         }).should.throw(/url/);
       });
       it("should require that names are unique", function() {
-        NachoBackend.resource({
+        Facade.resource({
           name: "patient",
           url: "/api/provider/patients"
         });
 
         (function() {
-          NachoBackend.resource({
+          Facade.resource({
             name: "patient",
             url: "/api/provider/patients"
           });
@@ -75,13 +75,13 @@
 
       });
       it("should require that urls are unique", function() {
-        NachoBackend.resource({
+        Facade.resource({
           name: "patient",
           url: "/api/provider/patients"
         });
 
         (function() {
-          NachoBackend.resource({
+          Facade.resource({
             name: "practice",
             url: "/api/provider/patients"
           });
@@ -89,14 +89,14 @@
 
       });
       it("should return an object with add method", function() {
-        var resource = NachoBackend.resource({
+        var resource = Facade.resource({
           name: "patient",
           url: "/api/provider/patients"
         });
         resource.addItem.should.be.a.Function;
       });
       it("should store the url on the returned object", function() {
-        var resource = NachoBackend.resource({
+        var resource = Facade.resource({
           name: "patient",
           url: "/api/provider/patients"
         });
@@ -105,7 +105,7 @@
     });
     xdescribe("#showRoutes", function() {
       beforeEach(function() {
-        var resource = NachoBackend.resource({
+        var resource = Facade.resource({
           name: "patient",
           url: "/api/provider/patients"
         });
@@ -117,7 +117,7 @@
           },
           onItem: true
         });
-        NachoBackend.initialize();
+        Facade.initialize();
       });
       it("should show all rest routes", function() {
 
@@ -128,15 +128,15 @@
     });
     describe("#initialize", function() {
       beforeEach(function() {
-        var patientResource = NachoBackend.resource({
+        var patientResource = Facade.resource({
           name: "patient",
           url: "/api/provider/patients"
         });
-        var practiceResource = NachoBackend.resource({
+        var practiceResource = Facade.resource({
           name: "practice",
           url: "/api/provider/practices"
         });
-        NachoBackend.backend = $httpBackend;
+        Facade.backend = $httpBackend;
 
         patient1 = patientResource.addItem({id: 1, name: "Joe Patient1"});
         patient2 = patientResource.addItem({id: 2, name: "Joe Patient2"});
@@ -146,14 +146,14 @@
         practice2 = practiceResource.addItem({id: 2, name: "My Practice2"});
         practiceList = [ {id: 1, name: "My Practice1"}, {id: 2, name: "My Practice2"}];
 
-        NachoBackend.initialize();
+        Facade.initialize();
 
         createController();
       });
       it("should throw if it doesnt detect $httpBackend", function() {
-        NachoBackend.backend = undefined;
+        Facade.backend = undefined;
         (function() {
-          NachoBackend.initialize();
+          Facade.initialize();
         }).should.throw(/httpBackend/);
       });
       describe("REST routes", function() {
@@ -204,7 +204,7 @@
           $httpBackend.flush();
           $rootScope.item.should.eql({id: 1, name: "Joe Patient1"});
 
-          NachoBackend.db.patient.find(1).name = "New Name";
+          Facade.db.patient.find(1).name = "New Name";
 
           $rootScope.getOne("patients", 1);
           $httpBackend.flush();
@@ -222,16 +222,16 @@
     describe("#addItem", function() {
       var patientResource;
       beforeEach(function() {
-        patientResource = NachoBackend.resource({
+        patientResource = Facade.resource({
           name: "patient",
           url: "/api/provider/patients"
         });
         createController();
-        NachoBackend.initialize({backend: $httpBackend});
+        Facade.initialize({backend: $httpBackend});
       });
       it("should take an object and add it to the database for that resource", function() {
         patientResource.addItem({id: 1, name: "Joe Bob"});
-        NachoBackend.db.patient.find(1).should.eql({id: 1, name: "Joe Bob"});
+        Facade.db.patient.find(1).should.eql({id: 1, name: "Joe Bob"});
       });
       it("should auto add rest routes for that patient", function() {
         (function() {
@@ -270,7 +270,7 @@
     });
     describe("#resource", function() {
       it("should be able to nest urls", function() {
-        var parentResource = NachoBackend.resource({
+        var parentResource = Facade.resource({
           name: "patient",
           url: "/api/provider/patients"
         });
@@ -282,7 +282,7 @@
         childResource.url.should.eql("/api/provider/patients/charges");
       });
       it("should be able to nest urls many levels deep", function() {
-        var parentResource = NachoBackend.resource({
+        var parentResource = Facade.resource({
           name: "patient",
           url: "/api/provider/patients"
         });
@@ -303,15 +303,15 @@
     describe("#addRoute", function() {
       var patientResource;
       beforeEach(function() {
-        patientResource = NachoBackend.resource({
+        patientResource = Facade.resource({
           name: "patient",
           url: "/api/provider/patients"
         });
         patient1 = patientResource.addItem({id: 1, name: "Joe Patient1", verified: false});
         patientResource.addItem({id: 2, name: "Joe Patient2", verified: false});
 
-        NachoBackend.backend = $httpBackend;
-        NachoBackend.initialize();
+        Facade.backend = $httpBackend;
+        Facade.initialize();
 
         createController();
       });
@@ -384,28 +384,28 @@
     describe("#findRoute", function() {
       var patientResource;
       beforeEach(function() {
-        patientResource = NachoBackend.resource({
+        patientResource = Facade.resource({
           name: "patient",
           url: "/api/provider/patients"
         });
         patientResource.addItem({id: 1, name: "Joe Patient1"});
         patientResource.addItem({id: 2, name: "Joe Patient2"});
-        patient1 = NachoBackend.db.patient.find(1, {wrap: true});
+        patient1 = Facade.db.patient.find(1, {wrap: true});
 
-        NachoBackend.backend = $httpBackend;
-        NachoBackend.initialize();
+        Facade.backend = $httpBackend;
+        Facade.initialize();
       });
       it("should be able find existing routes", function() {
-        var patientCollectionRoute = NachoBackend.findRoute("GET", "/api/provider/patients");
+        var patientCollectionRoute = Facade.findRoute("GET", "/api/provider/patients");
         patientCollectionRoute.should.be.an.Object
       });
       it("should have a nextResponse method", function() {
-        var patientCollectionRoute = NachoBackend.findRoute("GET", "/api/provider/patients");
+        var patientCollectionRoute = Facade.findRoute("GET", "/api/provider/patients");
         patientCollectionRoute.nextResponse.should.be.a.Function
       });
       it("should fail on non-existant routes", function() {
         (function() {
-          NachoBackend.findRoute("GET", "/api/provider/NOTREAL");
+          Facade.findRoute("GET", "/api/provider/NOTREAL");
         }).should.throw(/does not exist/);
 
       });
@@ -417,7 +417,7 @@
         describe("the restful ID routes", function() {
           describe("GET/id route", function() {
             beforeEach(function() {
-              NachoBackend
+              Facade
                 .findRoute("GET", patient1.showUrl())
                 .nextResponse(404, {message: "Not found"});
             });
@@ -442,7 +442,7 @@
             });
           })
           it("should work on restful PATCH routes", function() {
-            NachoBackend
+            Facade
               .findRoute("PUT", patient1.showUrl())
               .nextResponse(404, {message: "Not found!"});
 
@@ -453,7 +453,7 @@
             $rootScope.error.should.eql({status: 404, message: "Not found!"});
           })
           it("should work on restful DELETE routes", function() {
-            NachoBackend
+            Facade
               .findRoute("DELETE", patient1.showUrl())
               .nextResponse(404, {message: "Not found!"});
 
@@ -466,7 +466,7 @@
         });
         describe("the restful collection routes", function() {
           it("should work on restful create routes", function() {
-            NachoBackend
+            Facade
               .findRoute("POST", patientResource.url)
               .nextResponse(404, {message: "Not found!"});
 
@@ -478,7 +478,7 @@
           });
 
           it("should work on restful index routes", function() {
-            NachoBackend
+            Facade
               .findRoute("GET", patientResource.url)
               .nextResponse(404, {message: "Not found!"});
 
@@ -500,7 +500,7 @@
               onItem: true
             });
 
-            NachoBackend
+            Facade
               .findRoute("POST", patient1.showUrl() + "/verify")
               .nextResponse(404, {message: "Can't verify!"});
 
@@ -523,7 +523,7 @@
               }
             });
 
-            NachoBackend
+            Facade
               .findRoute("POST", patientResource.url + "/verify")
               .nextResponse(404, {message: "Can't verify!"});
 
