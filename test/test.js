@@ -112,7 +112,7 @@
         patientResource.addRoute({
           method:"POST",
           route:"/verify",
-          callback: function(data, item, headers) {
+          callback: function(data, item) {
             item.verified = true;
           },
           onItem: true
@@ -255,7 +255,7 @@
         patientResource.addRoute({
           method:"POST",
           route:"/verify",
-          callback: function(data, item, headers) {
+          callback: function(data, item) {
             item.verified = true;
           },
           onItem: true

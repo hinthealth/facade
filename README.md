@@ -1,67 +1,182 @@
-# nachoBackend
-### So tasty...
+# Facade
 
 #### Installation:
-`bower install nachoBackend`
+`bower install facade`
+
+
+#### The problem:
+  If you write a lot of angular tests, you probably have lots of similar whenGET's and whenPOST's, etc. sitting all over the place in your code. It's annoying, gross, and it discourages people from writing tests when there's a lot of boiler plate. Not to mention it makes it way harder to quickly understand the meaning of the tests, and honestly, you usually just don't care about that route, and you just want it to work. 
+
+#### The solution:
+
+  Put it in one place! Put up a Facade!
+
+  Your tests will go from...
+
+  ```
+    // In testFile1.js
+    $httpBackend.whenGET('/api/provider/patients').respond([]);
+    $httpBackend.whenGET('/api/provider/coupons?archived=false').respond([coupon]);
+    $httpBackend.whenGET('/api/provider/plan').respond(plan);
+    $httpBackend.whenGET('/api/provider/practitioners').respond([]);
+
+    it("should show a coupon", function() {
+      // do test things.
+    })
+
+    // And then in testFile2.js
+    $httpBackend.whenGET('/api/provider/patients').respond([]);
+    $httpBackend.whenGET('/api/provider/coupons?archived=false').respond([coupon]);
+    $httpBackend.whenGET('/api/provider/plan').respond(plan);
+    $httpBackend.whenGET('/api/provider/practitioners').respond([]);
+
+    it("should show a plan", function() {
+      // do test things.
+    });
+
+  ```
+
+  to simply...
+  ```
+    // In testFile1.js
+    it("should show a coupon", function() {
+      // do test things
+    });
+
+    // And then in testFile2.js
+    it("should show a plan", function() {
+      // do test things
+    });
+
+  ```
 
 #### How to use:
 
-- Include it in your test files AFTER angular-mocks. (so it can overwrite $httpBackend)
-- inject in $httpBackend to your tests like normal.
+##### 1.) Include it in your karma conf file like so...
+  ```
+    files: [
+      'bower_components/facade/dist/facade.min.js'
+    ]
+  ```
 
-##### Configure your standard backend only once!
+##### 2.) Configure your standard backend only once!
   - Set up a "database" with various mocks of your backend responses.
   - Set standard routes ONCE that your app might hit (ie. 'GET /user/:id', or 'POST /pictures')
-  - After that, just initialize httpBackend, and it will just work.
+
+##### 3.) Initialize Facade in your tests.
+```
+  // Somewhere in your test file
+
+  beforeEach(function() {
+    Facade.initialize();
+  })
+
+  afterEach(function() {
+    // To keep tests running independently.
+    Facade.reset();
+  });
+
+```
 
 
-##### Configure your routes and resources;
+##### Basics:
+  
+  **Adding your resources**
+  (perhaps in a seperate mock file that you include with each test);
+
   ```
-  var patientResource = nachoBackend.resource({
+  var patientResource = Facade.resource({
     name: 'patient',
-    route: 'api/provider/patients',
-    instances: [Replicator.build('patient')]
+    route: 'api/provider/patients'
   });
 
-  // Easily add custom non-crud routes;
-  // resource.route(route, response)
-  patientResource.route('/verify', Replicator.build('patient', {verified: true}) );
+  ```
+  By creating the resource, Facade will automatically make all standard REST routes
 
-  var practiceResource = nachoBackend.resource({
-    name: 'practice',
-    route: 'api/provider/patients',
-    responses: {
-      index: [200, Replicator.build('practice'), Replicator.build('practice', {withStripe: true})],
-      get: [200, Repliactor.build('practice')],
-      post: [201, {}],
-      delete: [201, {}]
-    }
-  });
+  **Adding your responses**
 
-  var DB = $httpBackend.initialize(); --> sets up your configured backend.
+  ```
+    patientResource.addItem({id: 'pat-2J8K', name: "New Patient"});
+
+  ```
+  When adding items, Facade automatically creates routes based on that items id.
+
+  For example, this item creates a route for '/api/provider/patients/pat-2J8K';
+
+  And when you hit that route, the response will be `{id: 'pat-2J8K', name: "New Patient"}`.
+
+  **Using the 'database'**
+  After adding items, those items go into Facade's 'database'. You can access it like so.
+  ```
+  var DB = Facade.db;
+  var patient = DB.patient.find('pat-2J8K');
+  // Note it's DB.patient because we set the name as "patient" when creating the resource.
   ```
 
-### Then stop writing whenGET's all over the fucking place!
 
-#### This lets you approach your test writing in a way more fun way.
-
-Write tests like...
-
-```
-
-it('should show verify button for unverified patients', function() {
-  visit('/patients');
-  expect(find('verifyButton')).toBeVisible();
-});
-
-it('should not show verify button for verified patients', function() {
-  DB.patient.first.is_verified = true;
-  visit('/patients');
-  expect(find('verifyButton')).not.toBeVisible();
-});
+#### More power!
 
 
+  **Nesting routes**
+
+  You can take that resource you just made, and then nest another one under it, like so:
+  ``` 
+  var patientChargesResource = patientResource.resource({
+    name: 'charge',
+    route: '/charges'
+  });
+
+  patientChargesResource.url // '/api/provider/patients/charges'
+
+  ```
+
+  **Adding custom routes**
+  If you need more than rest routes, it's easy to add whatever you like
+
+  ```
+    patientResource.addRoute({
+      method:"POST",
+      route:"/verify",
+      // This callback is called everytime the route is run. It is not the response.
+      // Currently the response for custom routes is just the item, or collection, depending on // the route.
+      callback: function(data, item ) {
+        item.verified = true;
+        // If the onItem flag was false, this function would be passed the collection,
+        // and not the item.
+      },
+      // this flag adds the route for every item in the db. eg. '/patients/1/verify'
+      onItem: true 
+    });
+
+  ```
+  *notes about the addRoute options hash*
+  If the `onItem` flag is omitted, or set to false, it will create the route on the collection.
+  eg. '/patients/verify';
+
+  The callback for adding a route is meant to let you "perform the action" of the route. Very similar to whatever your real backend might do for this route. The callback is passed the request data, and then the appropriate database object. Which is the item if it's an item route (eg. patients/3/verify), or the collection if it's a colleciton route (eg. patients/verify)
 
 
-```
+  ** Creating special responses (and errors) **
+  Facade lets you alter the response of any route as needed. Typical use of this would be for simulating errors.
 
+  Just find the route, and then do what you will!
+  ```
+    var indexRoute = Facade.findRoute("GET", patientResource.url)
+
+    indexRoute.nextResponse(404, {message: "Not found"});
+  ```
+  As you might expect the next time the route gets hit, it will return a 404 status with
+  a JSON payload of {message: "Not found"}.
+
+  The *next* time that route is hit (after the error has been returned once), it will
+  return it's original response;
+
+  Also, a note, you could do as many "nextResponses" on the indexRoute as you like. They get thrown into an array, and then shifted off one at a time as the route gets hit.
+
+  **Getting the route from an item**
+  For a little convenience, you can pull an item from the DB that knows about it's URL.
+  Specifically by doing...
+  ```
+  var patient = DB.patient.find('pat-JF8K', {wrap: true});
+  patient.showUrl(); // '/api/provider/patients/pat-JF8K';
+  ```
