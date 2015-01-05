@@ -60,12 +60,12 @@
   ```
 
 ##### 2.) Configure your standard backend only once!
-  - Set up a "database" with various mocks of your backend responses.
-  - Set standard routes ONCE that your app might hit (ie. 'GET /user/:id', or 'POST /pictures')
+  - Set up the resources your app uses ('users', 'photos', 'patients', whatever)
+  - Set up a "database" with various mocks of your backend responses for those resources.
 
 ##### 3.) Initialize Facade in your tests.
 ```
-  // Somewhere in your test file
+  // Somewhere in your test file, do something like...
 
   beforeEach(function() {
     Facade.initialize();
@@ -75,7 +75,6 @@
     // To keep tests running independently.
     Facade.reset();
   });
-
 ```
 
 
@@ -89,15 +88,13 @@
     name: 'patient',
     route: 'api/provider/patients'
   });
-
   ```
-  By creating the resource, Facade will automatically make all standard REST routes
+  By creating the resource, Facade will automatically make all standard REST routes (index, create, and then get/:id, put/:id, and delete/:id).
 
   **Adding your responses**
 
   ```
     patientResource.addItem({id: 'pat-2J8K', name: "New Patient"});
-
   ```
   When adding items, Facade automatically creates routes based on that items id.
 
@@ -127,7 +124,6 @@
   });
 
   patientChargesResource.url // '/api/provider/patients/charges'
-
   ```
 
   **Adding custom routes**
@@ -147,13 +143,12 @@
       // this flag adds the route for every item in the db. eg. '/patients/1/verify'
       onItem: true 
     });
-
   ```
-  *notes about the addRoute options hash*
-  If the `onItem` flag is omitted, or set to false, it will create the route on the collection.
+  **notes about the addRoute options hash**
+  `onItem`: If this flag is omitted, or set to false, it will create the route on the collection.
   eg. '/patients/verify';
 
-  The callback for adding a route is meant to let you "perform the action" of the route. Very similar to whatever your real backend might do for this route. The callback is passed the request data, and then the appropriate database object. Which is the item if it's an item route (eg. patients/3/verify), or the collection if it's a colleciton route (eg. patients/verify)
+  `callback`: This is meant to let you "perform the action" of the route. Very similar to whatever your real backend might do for this route. The callback is passed the request data, and then the appropriate database object. Which is the item if it's an item route (eg. patients/3/verify), or the collection if it's a colleciton route (eg. patients/verify)
 
 
   ** Creating special responses (and errors) **
