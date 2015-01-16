@@ -12,6 +12,7 @@
   var originalResources = {}
   var originalDb = {}
   var originalRoutes = {};
+  var customRouteOpts = [];
 
 
   // PUBLIC FUNCTIONS //
@@ -50,10 +51,15 @@
     definitionCallback = callback
   };
 
+  Facade.undefine = function() {
+    definitionCallback = undefined;
+  }
+
   Facade.clear = function() {
     this.resources = {};
     this.db = {};
     facadeRoutes = {};
+    customRouteOpts = [];
     this.backend = undefined;
     backendIsInitialized = false;
   };
@@ -108,6 +114,11 @@
     _.each(itemRouteCreators(), function(routeCreator) {
       var opts = {resource: resource, item: item, method: routeCreator.method}
       routeCreator.createWith(opts);
+      storeRoute(opts);
+    });
+    _.each(customRouteOpts, function(opts) {
+      opts.item = item;
+      createCustomRouteForItem(opts);
       storeRoute(opts);
     });
   }
@@ -255,6 +266,10 @@
     facadeRoutes[opts.resource.name][fullRoute] = buildRoute(fullRoute);
   }
 
+  function storeRouteOpts(opts) {
+    customRouteOpts.push(opts);
+  };
+
 
   // ** Class Factories ** //
 
@@ -273,11 +288,18 @@
         }
         return item;
       },
+      addItems: function(items) {
+        checkForArray(items);
+        _.each(items, function(item) {
+          this.addItem(item);
+        }, this);
+      },
       resource: buildResource,
       addRoute: function(opts) {
         opts = opts || {};
         checkForRequiredRouteArgs(opts);
         opts.resource = this;
+        storeRouteOpts(opts);
         if (opts.onItem) {
           var allItems = getTable(this).getAll()
           _.each(allItems, function(item) {
@@ -419,6 +441,12 @@
   function checkForIdToFindOn(id) {
     if (!id) {
       throw new Error("You must pass in an id to find a record");
+    }
+  }
+
+  function checkForArray(items) {
+    if (!_.isArray(items)) {
+      throw new Error("addItems must take an array")
     }
   }
 

@@ -26,7 +26,7 @@
   });
   describe("Facade", function() {
     describe('#define', function() {
-      it.only("should be able to take a callback that runs every time when initialized", function() {
+      it("should be able to take a callback that runs every time when initialized", function() {
         var callCount = 0;
         Facade.define(function() {
           var resource = Facade.resource({
@@ -39,6 +39,7 @@
         Facade.clear();
         Facade.initialize({backend: $httpBackend});
         callCount.should.equal(2);
+        Facade.undefine();
       });
     });
     describe("#resource", function() {
@@ -285,7 +286,7 @@
         $rootScope.item.should.eql({id: 2, name: "New Patient"});
 
       });
-      xit("should auto add custom routes for that patient", function() {
+      it("should auto add custom routes for that patient", function() {
         (function() {
           $rootScope.verifyPatient(patient1.id);
           $httpBackend.flush();
@@ -299,11 +300,34 @@
           onItem: true
         });
 
-        patientResource.addItem({id: 2, name: "New Patient"});
+        var patient2 = patientResource.addItem({id: 2, name: "New Patient", verified: false});
 
-        $rootScope.verifyPatient(patient1.id);
+        $rootScope.verifyPatient(patient2.id);
         $httpBackend.flush();
 
+        $rootScope.verifiedPatient.verified.should.eql(true);
+      });
+    });
+    describe("#addItems", function() {
+      var patientResource;
+      beforeEach(function() {
+        patientResource = Facade.resource({
+          name: "patient",
+          url: "/api/provider/patients"
+        });
+        createController();
+        Facade.initialize({backend: $httpBackend});
+      });
+      it("should take multiple objects and add them to the database for that resource", function() {
+        var items = [{id: 1, name: "Joe Bob"}, {id: 2, name: "Jane Bob"}];
+        patientResource.addItems(items);
+        Facade.db.patient.find(1).should.eql({id: 1, name: "Joe Bob"});
+        Facade.db.patient.find(2).should.eql({id: 2, name: "Jane Bob"});
+      });
+      it("should throw an error if an array is not given", function() {
+        (function() {
+          patientResource.addItems({id: 1});
+        }).should.throw(/array/);
       });
     });
     describe("#resource", function() {
