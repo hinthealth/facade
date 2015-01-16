@@ -87,7 +87,7 @@
   ```
   var patientResource = Facade.resource({
     name: 'patient',
-    route: 'api/provider/patients'
+    url: 'api/provider/patients'
   });
   ```
   By creating the resource, Facade will automatically make all standard REST routes (index, create, and then get/:id, put/:id, and delete/:id).
@@ -137,7 +137,7 @@
   ``` 
   var patientChargesResource = patientResource.resource({
     name: 'charge',
-    route: '/charges'
+    url: '/charges'
   });
 
   patientChargesResource.url // '/api/provider/patients/charges'
