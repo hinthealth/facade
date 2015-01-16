@@ -3,6 +3,7 @@
   window.Facade = {};
 
   var backendIsInitialized = false;
+  var definitionCallback;
 
   Facade.resources = {};
   Facade.db = {};
@@ -11,6 +12,7 @@
   var originalResources = {}
   var originalDb = {}
   var originalRoutes = {};
+
 
   // PUBLIC FUNCTIONS //
   Facade.resource = function(opts) {
@@ -30,6 +32,7 @@
   Facade.initialize = function(opts) {
     checkForHttpBackend(opts);
     backendIsInitialized = true;
+    _.isFunction(definitionCallback) && definitionCallback();
     _.each(this.resources, function(resource) {
       createRestRoutes(resource);
     });
@@ -43,11 +46,9 @@
     backendIsInitialized = false;
   };
 
-  function createCopiesOfMasterLists() {
-    originalResources = _.clone(Facade.resources, true);
-    originalDb = _.clone(Facade.db, true);
-    originalRoutes = _.clone(facadeRoutes, true);
-  }
+  Facade.define = function(callback) {
+    definitionCallback = callback
+  };
 
   Facade.clear = function() {
     this.resources = {};
@@ -75,6 +76,12 @@
 
 
   // ** Routes ** //
+
+  function createCopiesOfMasterLists() {
+    originalResources = _.clone(Facade.resources, true);
+    originalDb = _.clone(Facade.db, true);
+    originalRoutes = _.clone(facadeRoutes, true);
+  }
 
   function createRestRoutes(resource) {
     createCollectionRoutesFor(resource);

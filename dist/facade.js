@@ -59,6 +59,7 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
   window.Facade = {};
 
   var backendIsInitialized = false;
+  var definitionCallback;
 
   Facade.resources = {};
   Facade.db = {};
@@ -67,6 +68,7 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
   var originalResources = {}
   var originalDb = {}
   var originalRoutes = {};
+
 
   // PUBLIC FUNCTIONS //
   Facade.resource = function(opts) {
@@ -86,6 +88,7 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
   Facade.initialize = function(opts) {
     checkForHttpBackend(opts);
     backendIsInitialized = true;
+    _.isFunction(definitionCallback) && definitionCallback();
     _.each(this.resources, function(resource) {
       createRestRoutes(resource);
     });
@@ -99,11 +102,9 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
     backendIsInitialized = false;
   };
 
-  function createCopiesOfMasterLists() {
-    originalResources = _.clone(Facade.resources, true);
-    originalDb = _.clone(Facade.db, true);
-    originalRoutes = _.clone(facadeRoutes, true);
-  }
+  Facade.define = function(callback) {
+    definitionCallback = callback
+  };
 
   Facade.clear = function() {
     this.resources = {};
@@ -131,6 +132,12 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
 
 
   // ** Routes ** //
+
+  function createCopiesOfMasterLists() {
+    originalResources = _.clone(Facade.resources, true);
+    originalDb = _.clone(Facade.db, true);
+    originalRoutes = _.clone(facadeRoutes, true);
+  }
 
   function createRestRoutes(resource) {
     createCollectionRoutesFor(resource);

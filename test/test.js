@@ -25,6 +25,22 @@
     Facade.clear();
   });
   describe("Facade", function() {
+    describe('#define', function() {
+      it.only("should be able to take a callback that runs every time when initialized", function() {
+        var callCount = 0;
+        Facade.define(function() {
+          var resource = Facade.resource({
+            name: "patient",
+            url: "/api/provider/patients"
+          });
+          callCount += 1;
+        });
+        Facade.initialize({backend: $httpBackend});
+        Facade.clear();
+        Facade.initialize({backend: $httpBackend});
+        callCount.should.equal(2);
+      });
+    });
     describe("#resource", function() {
       it("should return a resource with the passed in attributes", function() {
         var resource = Facade.resource({
