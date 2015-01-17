@@ -234,11 +234,14 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
     Facade.backend.whenPOST(opts.resource.url)
       .respond(function(method, url, data, headers) {
         data = data || {};
+        data = JSON.parse(data);
         var route = Facade.findRoute(method, url);
 
         // Perform the POST on the db
         var response = route.getSpecialResponseOr(function() {
-          var item = opts.resource.addItem(JSON.parse(data));
+          var item = _.isFunction(opts.resource.createDefault) && opts.resource.createDefault(data);
+          item = item || data;
+          opts.resource.addItem(item);
           return [200, JSON.stringify(item), {}, 'OK'];
         })
 

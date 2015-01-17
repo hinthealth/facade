@@ -166,8 +166,9 @@
       });
     });
     describe("#initialize", function() {
+      var patientResource;
       beforeEach(function() {
-        var patientResource = Facade.resource({
+        patientResource = Facade.resource({
           name: "patient",
           url: "/api/provider/patients"
         });
@@ -222,6 +223,15 @@
           $rootScope.post("patients", {id: 3, name: "My new patient!"});
           $httpBackend.flush();
           $rootScope.postedItem.should.eql({id: 3, name: "My new patient!"});
+        });
+        it("should use the create function when performing the POST route if it's there", function() {
+          patientResource.createDefault = function(postData) {
+            var defaultPatient = {id: "pat-12345", name: "Joe Smith"};
+            return _.extend(defaultPatient, postData);
+          };
+          $rootScope.post("patients", {name: "My new patient!"});
+          $httpBackend.flush();
+          $rootScope.postedItem.should.eql({id: "pat-12345", name: "My new patient!"});
         });
         it("should create a DELETE route for each resource item, and perform the DELETE", function() {
           $rootScope.getOne("patients", 1);
@@ -362,7 +372,7 @@
         grandChildResource.url.should.eql("/api/provider/patients/charges/payments");
       });
     });
-    describe.only("#expect", function() {
+    describe("#expect", function() {
       var patientResource;
       beforeEach(function() {
         patientResource = Facade.resource({
