@@ -362,6 +362,41 @@
         grandChildResource.url.should.eql("/api/provider/patients/charges/payments");
       });
     });
+    describe.only("#expect", function() {
+      var patientResource;
+      beforeEach(function() {
+        patientResource = Facade.resource({
+          name: "patient",
+          url: "/api/provider/patients"
+        });
+        createController();
+        Facade.initialize({backend: $httpBackend});
+      });
+      it("should return an object that has a with method", function() {
+        patientResource.expect('POST').with.should.be.a.Function;
+      });
+      it("should set an expectation when the 'with' method is called", function() {
+        patientResource.expect('POST').with({name: "Joe Smith"});
+        (function() {
+          $rootScope.post('patients', {id: 5, name: "Joe"});
+          $httpBackend.flush();
+          Facade.backend.verifyNoOutstandingExpectation();
+        }).should.throw(/with different data/);
+      });
+      it("should pass when the right data is sent in", function() {
+        patientResource.expect('POST').with({name: "Joe Smith"});
+        $rootScope.post('patients', {id: 5, name: "Joe Smith"});
+        $httpBackend.flush();
+        Facade.backend.verifyNoOutstandingExpectation();
+      });
+      it("should build off the resources url", function() {
+        patientResource.addItem({id: 5, name: "Jake Smith"});
+        patientResource.expect('PUT', '/5').with({name: "Jake Smith"});
+        $rootScope.patch('patients', 5, {name: "Jake Smith"});
+        $httpBackend.flush();
+        Facade.backend.verifyNoOutstandingExpectation();
+      });
+    });
     describe("#addRoute", function() {
       var patientResource;
       beforeEach(function() {

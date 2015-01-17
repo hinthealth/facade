@@ -258,6 +258,26 @@
     });
   }
 
+  function createExpectationFor(opts) {
+    var fullUrl = opts.resource.url + opts.route;
+    Facade.backend.expect(opts.method, fullUrl, withJSON(opts.expected))
+      .respond(function(method, url, requestData, headers) {
+        requestData = requestData || {};
+        var collection = getTable(opts.resource).getAll();
+        var route = Facade.findRoute(method, url);
+
+        if (!route.hasSpecialResponse()) {
+          _.isFunction(opts.callback) && opts.callback(requestData, collection);
+        }
+
+        var response = route.getSpecialResponseOr(function() {
+          return [200, JSON.stringify(collection), {}, 'OK'];
+        });
+
+        return response;
+      });
+  }
+
   function storeRoute(opts) {
     opts.route = opts.route || '';
     var prefix = opts.resource.url;
@@ -270,6 +290,38 @@
     customRouteOpts.push(opts);
   };
 
+
+  function withJSON(expectedParams) {
+    return function (postData) {
+      var jsonData = JSON.parse(postData);
+      if (!jsonData) {
+        console.log("Unable to parse to JSON:", postData);
+        return false;
+      }
+      return _.all(expectedParams, function (expectedValue, expectedKey) {
+        return findParam(jsonData, expectedValue, expectedKey);
+      });
+    };
+
+    function findParam(json, expectedVal, expectedKey) {
+      if (json[expectedKey]) {
+        if (json[expectedKey] === expectedVal) { return true }
+        console.log('Expected', expectedKey, "to equal", expectedVal, "in", json, "but it was", json[expectedKey]);
+        return false;
+      }
+      var nested = _.filter(json, function(val) {
+        return _.isObject(val);
+      })
+      var foundParam = json[expectedKey] === val
+      if (!nested && !foundParam) {
+        console.log('Missing expectedKey', expectedKey, "in", nestedData, "should include", expectedParams);
+        return false;
+      }
+      return _.any(nested, function(json) {
+        return findParam(json, expectedVal, expectedKey);
+      });
+    }
+  }
 
   // ** Class Factories ** //
 
@@ -310,6 +362,17 @@
         }else {
           createCustomRouteForCollection(opts);
           storeRoute(opts);
+        }
+      },
+      expect: function(method, route) {
+        checkForValidMethod(method);
+        route = route || '';
+        var self = this;
+        return {
+          with: function(params) {
+            opts = {method: method, route: route, expected: params, resource: self};
+            createExpectationFor(opts);
+          }
         }
       }
     };
@@ -450,6 +513,16 @@
     }
   }
 
+  function checkForValidMethod(method) {
+    if (!_.isString(method)) {
+      throw new Error("No HTTP method was provided");
+    }
+    var httpVerbs = ['GET', 'POST', 'PATCH', 'PUT', 'HEAD', 'DELETE'];
+    if (!_.contains(httpVerbs, method)) {
+      throw new Error(method + " is not a valid HTTP method.")
+    }
+  };
+
   function checkForHttpBackend(opts) {
     opts = opts || {};
     Facade.backend = Facade.backend || opts.backend || {};
@@ -462,10 +535,8 @@
   }
 
   function checkForRequiredRouteArgs(opts) {
-    var httpVerbs = ['GET', 'POST', 'PATCH', 'PUT', 'HEAD', 'DELETE'];
-    if (!_.contains(httpVerbs, opts.method)) {
-      throw new Error(opts.method + " is not a valid HTTP method.")
-    }
+    checkForValidMethod(opts.method);
+
     if (!_.isString(opts.route)) {
       throw new Error("You must supply a route. eg: '/my_route' ");
     }

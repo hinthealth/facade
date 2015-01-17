@@ -60,21 +60,31 @@
   ```
 
 ##### 2.) Configure your standard backend only once!
-  - Set up the resources your app uses ('users', 'photos', 'patients', whatever)
-  - Set up a "database" with various mocks of your backend responses for those resources.
+  ```
+    // in some test_mocks.js file
+    // you set up the resources your app uses ('users', 'photos', 'patients', whatever)
+    Facade.define(function() {
+      Facade.addResource({
+        name: 'patient',
+        url: '/api/provider/patients';
+      })
+    });
+  ```
+  And perhaps also set up the "database" with various mocks of your backend responses for those resources.
 
 ##### 3.) Initialize Facade in your tests.
 ```
   // Somewhere in your test file, do something like...
 
   beforeEach(function() {
+    var patients = Facade.resources.patient;
+    patients.addItem(patientToTest);
     Facade.initialize();
   })
 
   afterEach(function() {
     // To keep tests running independently.
-    Facade.reset(); 
-    // OR... Facade.clear() depending on your workflow. See below for more info.
+    Facade.clear();
   });
 ```
 
@@ -85,17 +95,22 @@
   (perhaps in a seperate mock file that you include with each test);
 
   ```
-  var patientResource = Facade.resource({
-    name: 'patient',
-    url: 'api/provider/patients'
-  });
+  Facade.define(function() {
+    var patientResource = Facade.resource({
+      name: 'patient',
+      url: 'api/provider/patients'
+    });
+  })
   ```
   By creating the resource, Facade will automatically make all standard REST routes (index, create, and then get/:id, put/:id, and delete/:id).
 
   **Adding your responses**
 
   ```
-    patientResource.addItem({id: 'pat-2J8K', name: "New Patient"});
+    var patient1 = {id: 'pat-2J8K', name: "New Patient"};
+    patientResource.addItem(patient1);
+    // Or...
+    patientResource.addItems([patient1, patient2]);
   ```
   When adding items, Facade automatically creates routes based on that items id.
 
@@ -112,21 +127,10 @@
   ```
 
   **Keeping tests Independent**
-  Depending on your workflow, there are two ways to keep each test run independent.
-
   ```
   Facade.clear();
   // clear will actually just set the db/routes/resources to empty objects. Note, it also clears out the `.backend` definition. So you should also be setting $httpBackend in a beforeEach.
-  // Use this when you actually add resources/objects in the beforeEach of your tests, and thus they are run every time.
   ```
-
-  Or...
-  ```
-  Facade.reset();
-  // reset brings things back to the way they were at initialization.
-  // Use this if you set up all your resources/routes in some mocks file that only gets included (and thus run) once, and isn't run each time in your tests.
-  ```
-
 
 #### More power!
 
@@ -167,6 +171,17 @@
 
   `callback`: This is meant to let you "perform the action" of the route. Very similar to whatever your real backend might do for this route. The callback is passed the request data, and then the appropriate database object. Which is the item if it's an item route (eg. patients/3/verify), or the collection if it's a colleciton route (eg. patients/verify)
 
+  **Creating Expectations!**
+  Facade provides convenience around HTTP expectations. Specifically, you can do,
+  ```
+    expectation = patientResource.expect('POST', '/verify');
+    expectation.with({name: "Joe"});
+  ```
+
+  the `with` method creates a normal `$httpBackend.expect` call, except with a couple extras:
+    - It builds off of the resources url, so you can specify less path, or no path at all
+    - The params you pass to `with` are recursively searched for in the request data. Thus, you only need to specify
+    what you really care about, and don't need to care about extraneous details of the request.
 
   **Creating special responses (and errors)**
   Facade lets you alter the response of any route as needed. Typical use of this would be for simulating errors.
