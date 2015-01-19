@@ -125,9 +125,11 @@
       storeRoute(opts);
     });
     _.each(customRouteOpts, function(opts) {
-      opts.item = item;
-      createCustomRouteForItem(opts);
-      storeRoute(opts);
+      if (opts.item) {
+        opts.item = item;
+        createCustomRouteForItem(opts);
+        storeRoute(opts);
+      }
     });
   }
 
