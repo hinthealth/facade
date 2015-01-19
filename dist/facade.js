@@ -181,7 +181,7 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
       storeRoute(opts);
     });
     _.each(customRouteOpts, function(opts) {
-      if (opts.item) {
+      if (opts.onItem) {
         opts.item = item;
         createCustomRouteForItem(opts);
         storeRoute(opts);

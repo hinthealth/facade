@@ -125,7 +125,7 @@
       storeRoute(opts);
     });
     _.each(customRouteOpts, function(opts) {
-      if (opts.item) {
+      if (opts.onItem) {
         opts.item = item;
         createCustomRouteForItem(opts);
         storeRoute(opts);
