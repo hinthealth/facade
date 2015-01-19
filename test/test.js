@@ -306,6 +306,7 @@
           route:"/verify",
           callback: function(data, item) {
             item.verified = true;
+            return [200, item, {}, 'OK'];
           },
           onItem: true
         });
@@ -431,6 +432,7 @@
             _.each(collection, function(item) {
               item.verified = true;
             })
+            return [200, collection, {}, 'OK'];
           }
         });
 
@@ -451,6 +453,7 @@
           route:"/verify",
           callback: function(data, item, headers) {
             item.verified = true;
+            return [200, item, {}, 'OK'];
           },
           onItem: true
         });
@@ -464,9 +467,47 @@
 
         $rootScope.verifiedPatient.verified.should.eql(true);
       });
-      xit("should be able to change the status and response value of custom routes", function() {
+      it("should be able to take a regex for the route", function() {
+        patientResource.addRoute({
+          method:"POST",
+          route: /verify/,
+          callback: function(data, collection, headers) {
+            _.each(collection, function(item) {item.verified = true});
+            return [200, collection[0], {}, 'OK'];
+          }
+        });
+        $rootScope.getOne("patients", patient1.id);
+        $httpBackend.flush();
+        $rootScope.item.verified.should.eql(false);
 
+        $rootScope.verifyPatient(patient1.id);
+        $httpBackend.flush();
+
+        $rootScope.verifiedPatient.verified.should.eql(true);
       });
+      it("should throw an error if the custom route returns an invalid response", function() {
+        patientResource.addRoute({
+          method:"POST",
+          route: /verify/,
+          callback: function(data, collection, headers) {
+            _.each(collection, function(item) {item.verified = true});
+            return [collection[0], {}, 'OK'];
+          }
+        });
+
+        (function() {
+          $rootScope.verifyPatient(patient1.id);
+          $httpBackend.flush();
+        }).should.throw(/Response/);
+      });
+      it("should throw an error if the custom route doesn't have a callback", function() {
+        (function() {
+          patientResource.addRoute({
+            method:"POST",
+            route: /verify/
+          });
+        }).should.throw(/supply a response/)
+      })
       xdescribe("short cut route methods", function() {
         it("should have a shortcut GET method", function() {
 

@@ -154,22 +154,26 @@
     patientResource.addRoute({
       method:"POST",
       route:"/verify",
-      // This callback is called everytime the route is run. It is not the response.
-      // Currently the response for custom routes is just the item, or collection, depending on // the route.
-      callback: function(data, item ) {
+      callback: function(data, item, headers) {
         item.verified = true;
         // If the onItem flag was false, this function would be passed the collection,
         // and not the item.
+        return [200, item, {}, 'OK'];
       },
       // this flag adds the route for every item in the db. eg. '/patients/1/verify'
       onItem: true 
     });
   ```
   **notes about the addRoute options hash**
+  `route`: Can be either a string or regex. If it's a regex, it can't be set to "onItem".
+
   `onItem`: If this flag is omitted, or set to false, it will create the route on the collection.
   eg. '/patients/verify';
 
-  `callback`: This is meant to let you "perform the action" of the route. Very similar to whatever your real backend might do for this route. The callback is passed the request data, and then the appropriate database object. Which is the item if it's an item route (eg. patients/3/verify), or the collection if it's a colleciton route (eg. patients/verify)
+  `callback`: This is **required** and is meant to let you "perform the action" of the route. Very similar to whatever your real backend might do for this route. It also returns the response of the route. The response must be in standard angular form which is 
+  `[status, data, headers, status_text]`. 
+  The callback is passed the request data, the appropriate database object (which is the item if it's an item route (eg. patients/3/verify), or the collection if it's a colleciton route (eg. patients/verify)). It's also passed the request headers.
+
 
   **Creating Expectations!**
   Facade provides convenience around HTTP expectations. Specifically, you can do,

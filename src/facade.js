@@ -24,7 +24,7 @@
     this.db[opts.name] = buildTable(opts.name);
 
     // Create a slot for the resources routes in the master route list;
-    facadeRoutes[opts.name] = [];
+    facadeRoutes[opts.name] = {};
 
     // Add resource to master list
     return this.resources[opts.name] = buildResource(opts);
@@ -68,12 +68,20 @@
     var routeObj;
     var fullRoute = [method, url].join(' ');
     var exists = _.any(facadeRoutes, function(resourceRoutes) {
-      return Boolean(resourceRoutes[fullRoute]) && (routeObj = resourceRoutes[fullRoute]);
+      routeObj = resourceRoutes[fullRoute];
+      if (routeObj) {
+        return routeObj;
+      }
+      return routeObj = _.chain(resourceRoutes)
+              .filter('regExp')
+              .where({method: method})
+              .find(function(route) {
+                return route.regExp.test(url);
+              }).value();
     });
     if (!exists) {
       throw new Error("The route " + fullRoute + " does not exist");
     }
-
     return routeObj;
   }
 
@@ -225,37 +233,33 @@
 
 
   function createCustomRouteForItem(opts) {
+    throwIfRegex(opts.route);
     var fullUrl = opts.resource.url + '/' + opts.item.id + opts.route;
     Facade.backend.when(opts.method, fullUrl).respond(function(method, url, requestData, headers) {
       requestData = requestData || {};
       var route = Facade.findRoute(method, url);
-
-      if (!route.hasSpecialResponse()) {
-        _.isFunction(opts.callback) && opts.callback(requestData, opts.item);
-      }
+      var item = getTable(opts.resource).find(opts.item.id);
 
       var response = route.getSpecialResponseOr(function() {
-        return [200, JSON.stringify(opts.item), {}, 'OK'];
+        return opts.callback(requestData, item, headers);
       });
+      checkForValidResponse(response);
 
       return response;
     });
   }
 
   function createCustomRouteForCollection(opts) {
-    var fullUrl = opts.resource.url + opts.route;
+    var fullUrl = _.isRegExp(opts.route) ? opts.route : opts.resource.url + opts.route
     Facade.backend.when(opts.method, fullUrl).respond(function(method, url, requestData, headers) {
       requestData = requestData || {};
       var collection = getTable(opts.resource).getAll();
       var route = Facade.findRoute(method, url);
 
-      if (!route.hasSpecialResponse()) {
-        _.isFunction(opts.callback) && opts.callback(requestData, collection);
-      }
-
       var response = route.getSpecialResponseOr(function() {
-        return [200, JSON.stringify(collection), {}, 'OK'];
+        return opts.callback(requestData, collection);
       });
+      checkForValidResponse(response);
 
       return response;
     });
@@ -283,10 +287,16 @@
 
   function storeRoute(opts) {
     opts.route = opts.route || '';
-    var prefix = opts.resource.url;
-    var fullUrl = opts.item ? prefix + '/' + opts.item.id + opts.route : prefix + opts.route;
-    var fullRoute = [opts.method, fullUrl].join(' ')
-    facadeRoutes[opts.resource.name][fullRoute] = buildRoute(fullRoute);
+    if (_.isRegExp(opts.route)) {
+      opts.regExp = opts.route;
+    }else {
+      var prefix = opts.resource.url;
+      var fullUrl = opts.item ? prefix + '/' + opts.item.id + opts.route : prefix + opts.route;
+      var fullRoute = [opts.method, fullUrl].join(' ')
+
+      opts.fullRoute = fullRoute;
+    }
+    facadeRoutes[opts.resource.name][(opts.regExp || opts.fullRoute)] = buildRoute(opts);
   }
 
   function storeRouteOpts(opts) {
@@ -381,10 +391,12 @@
     };
   }
 
-  function buildRoute(fullRoute) {
+  function buildRoute(opts) {
     var specialResponses = [];
     return {
-      fullRoute: fullRoute,
+      fullRoute: opts.fullRoute,
+      regExp: opts.regExp,
+      method: opts.method,
       nextResponse: function(status, data) {
         specialResponses.push({status: status, data: data});
       },
@@ -537,11 +549,27 @@
     }
   }
 
+  function throwIfRegex(route) {
+    if (_.isRegExp(route)) {
+      throw new Error("Regex routes can't be used for item routes. Either make 'onItem' false" +
+        " or make the route a string")
+    }
+  }
+
   function checkForRequiredRouteArgs(opts) {
     checkForValidMethod(opts.method);
+    if (!_.isString(opts.route) && !_.isRegExp(opts.route)) {
+      throw new Error("You must supply a route (eg: '/my_route') as either a string or regex");
+    }
+    if (!opts.callback) {
+      throw new Error("You must supply a response callback for custom routes.");
+    }
+  }
 
-    if (!_.isString(opts.route)) {
-      throw new Error("You must supply a route. eg: '/my_route' ");
+  function checkForValidResponse(response) {
+    if (!_.isArray(response)) { throw new Error("Response must be an array");}
+    if (response.length !== 4) {
+      throw new Error("Response does not appear to be in the form of [status, data, headers, status_text]" )
     }
   }
 
