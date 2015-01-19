@@ -269,7 +269,7 @@
   });
   describe("the Resource object", function() {
     describe("#addItem", function() {
-      var patientResource;
+      var patientResource, patient1;
       beforeEach(function() {
         patientResource = Facade.resource({
           name: "patient",
@@ -277,9 +277,9 @@
         });
         createController();
         Facade.initialize({backend: $httpBackend});
+        patient1 = patientResource.addItem({id: 1, name: "Joe Bob"});
       });
       it("should take an object and add it to the database for that resource", function() {
-        patientResource.addItem({id: 1, name: "Joe Bob"});
         Facade.db.patient.find(1).should.eql({id: 1, name: "Joe Bob"});
       });
       it("should auto add rest routes for that patient", function() {

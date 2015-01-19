@@ -294,7 +294,7 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
     throwIfRegex(opts.route);
     var fullUrl = opts.resource.url + '/' + opts.item.id + opts.route;
     Facade.backend.when(opts.method, fullUrl).respond(function(method, url, requestData, headers) {
-      requestData = requestData || {};
+      requestData = JSON.parse(requestData || "{}");
       var route = Facade.findRoute(method, url);
       var item = getTable(opts.resource).find(opts.item.id);
 
@@ -310,7 +310,7 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
   function createCustomRouteForCollection(opts) {
     var fullUrl = _.isRegExp(opts.route) ? opts.route : opts.resource.url + opts.route
     Facade.backend.when(opts.method, fullUrl).respond(function(method, url, requestData, headers) {
-      requestData = requestData || {};
+      requestData = JSON.parse(requestData || "{}");
       var collection = getTable(opts.resource).getAll();
       var route = Facade.findRoute(method, url);
 
@@ -327,7 +327,7 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
     var fullUrl = opts.resource.url + opts.route;
     Facade.backend.expect(opts.method, fullUrl, withJSON(opts.expected))
       .respond(function(method, url, requestData, headers) {
-        requestData = requestData || {};
+        requestData = JSON.parse(requestData || "{}");
         var collection = getTable(opts.resource).getAll();
         var route = Facade.findRoute(method, url);
 
