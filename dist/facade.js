@@ -383,7 +383,7 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
       var nested = _.filter(json, function(val) {
         return _.isObject(val);
       })
-      var foundParam = json[expectedKey] === val
+      var foundParam = json[expectedKey] === expectedVal
       if (!nested && !foundParam) {
         console.log('Missing expectedKey', expectedKey, "in", nestedData, "should include", expectedParams);
         return false;
