@@ -325,6 +325,7 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
 
   function createExpectationFor(opts) {
     var fullUrl = opts.resource.url + opts.route;
+    console.log('creating expecation');
     Facade.backend.expect(opts.method, fullUrl, withJSON(opts.expected))
       .respond(function(method, url, requestData, headers) {
         requestData = JSON.parse(requestData || "{}");
@@ -383,7 +384,7 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
       var nested = _.filter(json, function(val) {
         return _.isObject(val);
       })
-      var foundParam = json[expectedKey] === val
+      var foundParam = json[expectedKey] === expectedVal;
       if (!nested && !foundParam) {
         console.log('Missing expectedKey', expectedKey, "in", nestedData, "should include", expectedParams);
         return false;

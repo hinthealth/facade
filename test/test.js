@@ -400,6 +400,12 @@
         $httpBackend.flush();
         Facade.backend.verifyNoOutstandingExpectation();
       });
+      it("should find it when it's nested under other things", function() {
+        patientResource.expect('POST').with({name: "Joe Smith"});
+        $rootScope.post('patients', {patient: {id: 5, name: "Joe Smith"}});
+        $httpBackend.flush();
+        Facade.backend.verifyNoOutstandingExpectation();
+      });
       it("should build off the resources url", function() {
         patientResource.addItem({id: 5, name: "Jake Smith"});
         patientResource.expect('PUT', '/5').with({name: "Jake Smith"});
