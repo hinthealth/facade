@@ -386,7 +386,7 @@
       it("should return an object that has a with method", function() {
         patientResource.expect('POST').with.should.be.a.Function;
       });
-      it("should set an expectation when the 'with' method is called", function() {
+      xit("should set an expectation when the 'with' method is called", function() {
         patientResource.expect('POST').with({name: "Joe Smith"});
         (function() {
           $rootScope.post('patients', {id: 5, name: "Joe"});
@@ -412,6 +412,15 @@
         $rootScope.patch('patients', 5, {name: "Jake Smith"});
         $httpBackend.flush();
         Facade.backend.verifyNoOutstandingExpectation();
+      });
+      xit("should assume the params are nested under a key that is the resources name", function() {
+        patientResource.addItem({id: 5, name: "Jake Smith"});
+        patientResource.expect('PUT', '/5').with({name: "Jake Smith"});
+        (function() {
+          $rootScope.patch('patients', 5, {id: 5, name: "Joe"});
+          $httpBackend.flush();
+          Facade.backend.verifyNoOutstandingExpectation();
+        }).should.throw(/nested under patient/);
       });
     });
     describe("#addRoute", function() {

@@ -314,6 +314,7 @@
         console.log("Unable to parse to JSON:", postData);
         return false;
       }
+      // checkForParentKey()
       return _.all(expectedParams, function (expectedValue, expectedKey) {
         return findParam(jsonData, expectedValue, expectedKey);
       });
@@ -322,7 +323,7 @@
     function findParam(json, expectedVal, expectedKey) {
       if (json[expectedKey]) {
         if (json[expectedKey] === expectedVal) { return true }
-        console.log('Expected', expectedKey, "to equal", expectedVal, "in", json, "but it was", json[expectedKey]);
+        throw new Error('Expected ' + expectedKey + " to equal " + expectedVal + " but it was " + json[expectedKey]);
         return false;
       }
       var nested = _.filter(json, function(val) {
