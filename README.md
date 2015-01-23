@@ -99,10 +99,16 @@
     var patientResource = Facade.resource({
       name: 'patient',
       url: 'api/provider/patients'
+      createDefault: function(postData) {
+        var default = {id: 1, name: 'default patient'};
+        return _.extend({}, defaultPatient, postData);
+      }
     });
   })
   ```
   By creating the resource, Facade will automatically make all standard REST routes (index, create, and then get/:id, put/:id, and delete/:id).
+  
+  `createDefault` is the function that will be called when create routes (POST /resource) are hit.
 
   **Adding your responses**
 
