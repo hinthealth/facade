@@ -372,6 +372,29 @@
 
         grandChildResource.url.should.eql("/api/provider/patients/charges/payments");
       });
+      it("should be able to add custom routes to nested resources", function() {
+        var parentResource = Facade.resource({
+          name: "patient",
+          url: "/api/provider/patients"
+        });
+
+        var childResource = parentResource.resource({
+          name: "patientCharges",
+          url: "/charges"
+        });
+
+        Facade.initialize({backend: $httpBackend});
+
+        childResource.addRoute({
+          method: 'GET',
+          route: '/verify',
+          callback: function(data, collection) {
+            return [200, collection[0], {}, 'OK'];
+          }
+        });
+
+        Facade.findRoute('GET', '/api/provider/patients/charges/verify').should.be.an.Object;
+      })
     });
     describe("#expect", function() {
       var patientResource;

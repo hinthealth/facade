@@ -344,7 +344,6 @@
   function buildResource(opts) {
     // For nesting child urls if called from a parent.
     opts = opts || {};
-    opts.url = (this && this.url) ? this.url + opts.url : opts.url;
     return {
       url: opts.url,
       name: opts.name,
@@ -362,7 +361,10 @@
           this.addItem(item);
         }, this);
       },
-      resource: buildResource,
+      resource: function(opts) {
+        opts.url = this.url + opts.url;
+        return Facade.resource(opts);
+      },
       addRoute: function(opts) {
         opts = opts || {};
         checkForRequiredRouteArgs(opts);
