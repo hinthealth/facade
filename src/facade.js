@@ -165,6 +165,23 @@
       });
   }
 
+  function createPatchRoute(opts) {
+    var headers = {};
+    Facade.backend.whenPATCH(opts.resource.url + '/' + opts.item.id)
+      .respond(function(method, url, data, headers) {
+        data = data || {};
+        var route = Facade.findRoute(method, url);
+        var response = route.getSpecialResponseOr(function() {
+          var item = getOneItem(opts.resource, opts.item.id);
+          // Perform the patch on the db object
+          _.assign(item, JSON.parse(data));
+          return [200, JSON.stringify(item), headers, 'OK']
+        })
+
+        return response;
+      });
+  }
+
 
   function createDeleteRoute(opts) {
     var headers = {};
@@ -222,6 +239,7 @@
     return  [
       {createWith: createItemIdRoute, method: 'GET'},
       {createWith: createPutRoute, method: 'PUT'},
+      {createWith: createPatchRoute, method: 'PATCH'},
       {createWith: createDeleteRoute, method: 'DELETE'}
     ];
   }
@@ -269,7 +287,6 @@
 
   function createExpectationFor(opts) {
     var fullUrl = opts.resource.url + opts.route;
-    console.log('creating expecation');
     Facade.backend.expect(opts.method, fullUrl, withJSON(opts.expected))
       .respond(function(method, url, requestData, headers) {
         requestData = JSON.parse(requestData || "{}");
