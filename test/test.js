@@ -131,17 +131,6 @@
 
       });
     });
-    xdescribe("#reset", function() {
-      it("should reset database objects to the way the were at initialization", function() {
-
-      });
-      it("should reset routes to the way they were at initialization", function() {
-
-      });
-      it("should reset resources to the way the were at initialization", function() {
-
-      });
-    });
     xdescribe("#showRoutes", function() {
       beforeEach(function() {
         var resource = Facade.resource({
@@ -166,103 +155,134 @@
       });
     });
     describe("#initialize", function() {
-      var patientResource;
-      beforeEach(function() {
-        patientResource = Facade.resource({
-          name: "patient",
-          url: "/api/provider/patients"
-        });
-        var practiceResource = Facade.resource({
-          name: "practice",
-          url: "/api/provider/practices"
-        });
-        Facade.backend = $httpBackend;
-
-        patient1 = patientResource.addItem({id: 1, name: "Joe Patient1"});
-        patient2 = patientResource.addItem({id: 2, name: "Joe Patient2"});
-        patientList = [{id: 1, name: "Joe Patient1"}, {id: 2, name: "Joe Patient2"}];
-
-        practice1 = practiceResource.addItem({id: 1, name: "My Practice1"});
-        practice2 = practiceResource.addItem({id: 2, name: "My Practice2"});
-        practiceList = [ {id: 1, name: "My Practice1"}, {id: 2, name: "My Practice2"}];
-
-        Facade.initialize();
-
-        createController();
-      });
       it("should throw if it doesnt detect $httpBackend", function() {
         Facade.backend = undefined;
         (function() {
           Facade.initialize();
         }).should.throw(/httpBackend/);
       });
-      describe("REST routes", function() {
-        it("should create an GET index route for all created resources", function() {
-          $rootScope.getList("patients");
-          $rootScope.getList("practices");
-          $httpBackend.flush();
+      describe("with plural resources", function() {
+        var patientResource;
+        beforeEach(function() {
+          patientResource = Facade.resource({
+            name: "patient",
+            url: "/api/provider/patients"
+          });
+          var practiceResource = Facade.resource({
+            name: "practice",
+            url: "/api/provider/practices"
+          });
+          Facade.backend = $httpBackend;
 
-          $rootScope.patients.should.eql(patientList);
-          $rootScope.practices.should.eql(practiceList);
-        });
-        it("should create a GET/id route for each item of a resource", function() {
-          $rootScope.getOne("patients", 1);
-          $httpBackend.flush();
-          $rootScope.item.should.eql({id: 1, name: "Joe Patient1"});
+          patient1 = patientResource.addItem({id: 1, name: "Joe Patient1"});
+          patient2 = patientResource.addItem({id: 2, name: "Joe Patient2"});
+          patientList = [{id: 1, name: "Joe Patient1"}, {id: 2, name: "Joe Patient2"}];
 
-          $rootScope.getOne("patients", 2);
-          $httpBackend.flush();
-          $rootScope.item.should.eql({id: 2, name: "Joe Patient2"});
-        });
-        it("should create a PATCH route for each resource item, and perform the patch", function() {
-          $rootScope.patch("patients", 1, {name: "Crazy new name!"});
-          $httpBackend.flush();
-          $rootScope.patchedItem.should.eql({id: 1, name: "Crazy new name!"});
-        });
-        it("should create a POST route for each resource item, and perform the POST", function() {
-          $rootScope.post("patients", {id: 3, name: "My new patient!"});
-          $httpBackend.flush();
-          $rootScope.postedItem.should.eql({id: 3, name: "My new patient!"});
-        });
-        it("should use the create function when performing the POST route if it's there", function() {
-          patientResource.createDefault = function(postData) {
-            var defaultPatient = {id: "pat-12345", name: "Joe Smith"};
-            return _.extend(defaultPatient, postData);
-          };
-          $rootScope.post("patients", {name: "My new patient!"});
-          $httpBackend.flush();
-          $rootScope.postedItem.should.eql({id: "pat-12345", name: "My new patient!"});
-        });
-        it("should create a DELETE route for each resource item, and perform the DELETE", function() {
-          $rootScope.getOne("patients", 1);
-          $httpBackend.flush();
-          $rootScope.item.should.eql({id: 1, name: "Joe Patient1"});
+          practice1 = practiceResource.addItem({id: 1, name: "My Practice1"});
+          practice2 = practiceResource.addItem({id: 2, name: "My Practice2"});
+          practiceList = [ {id: 1, name: "My Practice1"}, {id: 2, name: "My Practice2"}];
 
-          $rootScope.delete("patients", 1);
-          $httpBackend.flush();
+          Facade.initialize();
 
-          (function() {
+          createController();
+        });
+        describe("REST routes", function() {
+          it("should create an GET index route for all created resources", function() {
+            $rootScope.getList("patients");
+            $rootScope.getList("practices");
+            $httpBackend.flush();
+
+            $rootScope.patients.should.eql(patientList);
+            $rootScope.practices.should.eql(practiceList);
+          });
+          it("should create a GET/id route for each item of a resource", function() {
             $rootScope.getOne("patients", 1);
             $httpBackend.flush();
-          }).should.throw(/No item found/)
+            $rootScope.item.should.eql({id: 1, name: "Joe Patient1"});
 
+            $rootScope.getOne("patients", 2);
+            $httpBackend.flush();
+            $rootScope.item.should.eql({id: 2, name: "Joe Patient2"});
+          });
+          it("should create a PATCH route for each resource item, and perform the patch", function() {
+            $rootScope.patch("patients", 1, {name: "Crazy new name!"});
+            $httpBackend.flush();
+            $rootScope.patchedItem.should.eql({id: 1, name: "Crazy new name!"});
+          });
+          it("should create a POST route for each resource item, and perform the POST", function() {
+            $rootScope.post("patients", {id: 3, name: "My new patient!"});
+            $httpBackend.flush();
+            $rootScope.postedItem.should.eql({id: 3, name: "My new patient!"});
+          });
+          it("should use the create function when performing the POST route if it's there", function() {
+            patientResource.createDefault = function(postData) {
+              var defaultPatient = {id: "pat-12345", name: "Joe Smith"};
+              return _.extend(defaultPatient, postData);
+            };
+            $rootScope.post("patients", {name: "My new patient!"});
+            $httpBackend.flush();
+            $rootScope.postedItem.should.eql({id: "pat-12345", name: "My new patient!"});
+          });
+          it("should create a DELETE route for each resource item, and perform the DELETE", function() {
+            $rootScope.getOne("patients", 1);
+            $httpBackend.flush();
+            $rootScope.item.should.eql({id: 1, name: "Joe Patient1"});
+
+            $rootScope.delete("patients", 1);
+            $httpBackend.flush();
+
+            (function() {
+              $rootScope.getOne("patients", 1);
+              $httpBackend.flush();
+            }).should.throw(/No item found/)
+
+          });
+
+          it("should return the newest version of an item if you update it in the DB", function() {
+            $rootScope.getOne("patients", 1);
+            $httpBackend.flush();
+            $rootScope.item.should.eql({id: 1, name: "Joe Patient1"});
+
+            Facade.db.patient.find(1).name = "New Name";
+
+            $rootScope.getOne("patients", 1);
+            $httpBackend.flush();
+            $rootScope.item.should.eql({id: 1, name: "New Name"});
+          });
+        });
+      });
+      describe("with singleton resources", function() {
+        var practiceResource, practice;
+        beforeEach(function() {
+          practiceResource = Facade.resource({
+            name: "practice",
+            url: "/api/provider/practice",
+            singleton: true
+          });
+          Facade.backend = $httpBackend;
+
+          practice = practiceResource.addItem({id: 1, name: "Joe Patient1"});
+          Facade.initialize();
+          createController();
         });
 
-        it("should return the newest version of an item if you update it in the DB", function() {
-          $rootScope.getOne("patients", 1);
-          $httpBackend.flush();
-          $rootScope.item.should.eql({id: 1, name: "Joe Patient1"});
+        describe("REST routes", function() {
+          it("should create a GET route that doesn't need an id and returns a single object", function() {
+            $rootScope.get("practice")
+            $rootScope.practice.should.eql(practice);
+          });
+          it("should create a PATCH route that works on the singleton", function() {
 
-          Facade.db.patient.find(1).name = "New Name";
+          });
+          it("should allow you to POST, but should fail if two things are in the db", function() {
 
-          $rootScope.getOne("patients", 1);
-          $httpBackend.flush();
-          $rootScope.item.should.eql({id: 1, name: "New Name"});
-        });
-      })
-      describe("#define", function() {
-        it("should have a function to take all of the routes, child routes, etc", function() {
+          });
+          it("should set up a DELETE route", function() {
 
+          });
+          it("should not create any item routes", function() {
+
+          });
         });
       });
     });

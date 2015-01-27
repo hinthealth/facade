@@ -35,7 +35,11 @@
     backendIsInitialized = true;
     _.isFunction(definitionCallback) && definitionCallback();
     _.each(this.resources, function(resource) {
-      createRestRoutes(resource);
+      if (resource.singleton) {
+        createSingletonRestRoutes(resource);
+      }else {
+        createPluralRestRoutes(resource);
+      }
     });
     createCopiesOfMasterLists();
   };
@@ -97,11 +101,14 @@
     originalRoutes = _.clone(facadeRoutes, true);
   }
 
-  function createRestRoutes(resource) {
+  function createPluralRestRoutes(resource) {
     createCollectionRoutesFor(resource);
     createAllItemRoutes(resource);
   }
 
+  function createSingletonRestRoutes(resource) {
+    // createSingletonCollectionRoutes(resource);
+  }
 
   function createCollectionRoutesFor(resource) {
     _.each(collectionRouteCreators(), function(routeCreator) {
@@ -362,6 +369,7 @@
     // For nesting child urls if called from a parent.
     opts = opts || {};
     return {
+      singleton: opts.singleton,
       url: opts.url,
       name: opts.name,
       addItem: function(item) {
