@@ -168,25 +168,26 @@
     describe("#initialize", function() {
       var patientResource;
       beforeEach(function() {
-        patientResource = Facade.resource({
-          name: "patient",
-          url: "/api/provider/patients"
+        Facade.define(function() {
+          patientResource = Facade.resource({
+            name: "patient",
+            url: "/api/provider/patients"
+          });
+          var practiceResource = Facade.resource({
+            name: "practice",
+            url: "/api/provider/practices"
+          });
+
+          patient1 = patientResource.addItem({id: 1, name: "Joe Patient1"});
+          patient2 = patientResource.addItem({id: 2, name: "Joe Patient2"});
+          patientList = [{id: 1, name: "Joe Patient1"}, {id: 2, name: "Joe Patient2"}];
+
+          practice1 = practiceResource.addItem({id: 1, name: "My Practice1"});
+          practice2 = practiceResource.addItem({id: 2, name: "My Practice2"});
+          practiceList = [ {id: 1, name: "My Practice1"}, {id: 2, name: "My Practice2"}];
         });
-        var practiceResource = Facade.resource({
-          name: "practice",
-          url: "/api/provider/practices"
-        });
-        Facade.backend = $httpBackend;
 
-        patient1 = patientResource.addItem({id: 1, name: "Joe Patient1"});
-        patient2 = patientResource.addItem({id: 2, name: "Joe Patient2"});
-        patientList = [{id: 1, name: "Joe Patient1"}, {id: 2, name: "Joe Patient2"}];
-
-        practice1 = practiceResource.addItem({id: 1, name: "My Practice1"});
-        practice2 = practiceResource.addItem({id: 2, name: "My Practice2"});
-        practiceList = [ {id: 1, name: "My Practice1"}, {id: 2, name: "My Practice2"}];
-
-        Facade.initialize();
+        Facade.initialize({backend: $httpBackend});
 
         createController();
       });
@@ -195,6 +196,11 @@
         (function() {
           Facade.initialize();
         }).should.throw(/httpBackend/);
+      });
+      it("should be able to be run twice, and just clear everything out", function() {
+        (function() {
+          Facade.initialize({backend: $httpBackend});
+        }).should.not.throw();
       });
       describe("REST routes", function() {
         it("should create an GET index route for all created resources", function() {
@@ -271,10 +277,12 @@
     describe("#addItem", function() {
       var patientResource, patient1;
       beforeEach(function() {
-        patientResource = Facade.resource({
-          name: "patient",
-          url: "/api/provider/patients"
-        });
+        Facade.define(function() {
+          patientResource = Facade.resource({
+            name: "patient",
+            url: "/api/provider/patients"
+          });
+        })
         createController();
         Facade.initialize({backend: $httpBackend});
         patient1 = patientResource.addItem({id: 1, name: "Joe Bob"});
@@ -322,9 +330,11 @@
     describe("#addItems", function() {
       var patientResource;
       beforeEach(function() {
-        patientResource = Facade.resource({
-          name: "patient",
-          url: "/api/provider/patients"
+        Facade.define(function() {
+          patientResource = Facade.resource({
+            name: "patient",
+            url: "/api/provider/patients"
+          });
         });
         createController();
         Facade.initialize({backend: $httpBackend});
@@ -373,14 +383,16 @@
         grandChildResource.url.should.eql("/api/provider/patients/charges/payments");
       });
       it("should be able to add custom routes to nested resources", function() {
-        var parentResource = Facade.resource({
-          name: "patient",
-          url: "/api/provider/patients"
-        });
-
-        var childResource = parentResource.resource({
-          name: "patientCharges",
-          url: "/charges"
+        var childResource;
+        Facade.define(function() {
+          var parentResource = Facade.resource({
+            name: "patient",
+            url: "/api/provider/patients"
+          });
+          childResource = parentResource.resource({
+            name: "patientCharges",
+            url: "/charges"
+          });
         });
 
         Facade.initialize({backend: $httpBackend});
@@ -399,9 +411,11 @@
     describe("#expect", function() {
       var patientResource;
       beforeEach(function() {
-        patientResource = Facade.resource({
-          name: "patient",
-          url: "/api/provider/patients"
+        Facade.define(function() {
+          patientResource = Facade.resource({
+            name: "patient",
+            url: "/api/provider/patients"
+          });
         });
         createController();
         Facade.initialize({backend: $httpBackend});
@@ -440,16 +454,16 @@
     describe("#addRoute", function() {
       var patientResource;
       beforeEach(function() {
-        patientResource = Facade.resource({
-          name: "patient",
-          url: "/api/provider/patients"
+        Facade.define(function() {
+          patientResource = Facade.resource({
+            name: "patient",
+            url: "/api/provider/patients"
+          });
+          patient1 = patientResource.addItem({id: 1, name: "Joe Patient1", verified: false});
+          patientResource.addItem({id: 2, name: "Joe Patient2", verified: false});
         });
-        patient1 = patientResource.addItem({id: 1, name: "Joe Patient1", verified: false});
-        patientResource.addItem({id: 2, name: "Joe Patient2", verified: false});
 
-        Facade.backend = $httpBackend;
-        Facade.initialize();
-
+        Facade.initialize({backend: $httpBackend});
         createController();
       });
 
@@ -561,16 +575,17 @@
     describe("#findRoute", function() {
       var patientResource;
       beforeEach(function() {
-        patientResource = Facade.resource({
-          name: "patient",
-          url: "/api/provider/patients"
+        Facade.define(function() {
+          patientResource = Facade.resource({
+            name: "patient",
+            url: "/api/provider/patients"
+          });
+          patientResource.addItem({id: 1, name: "Joe Patient1"});
+          patientResource.addItem({id: 2, name: "Joe Patient2"});
+          patient1 = Facade.db.patient.find(1, {wrap: true});
         });
-        patientResource.addItem({id: 1, name: "Joe Patient1"});
-        patientResource.addItem({id: 2, name: "Joe Patient2"});
-        patient1 = Facade.db.patient.find(1, {wrap: true});
 
-        Facade.backend = $httpBackend;
-        Facade.initialize();
+        Facade.initialize({backend: $httpBackend});
       });
       it("should be able find existing routes", function() {
         var patientCollectionRoute = Facade.findRoute("GET", "/api/provider/patients");

@@ -31,7 +31,13 @@
   };
 
   Facade.initialize = function(opts) {
+    checkIfAlreadyInitialized();
+    Facade.clear();
+
+    opts = opts || {};
+    Facade.backend = opts.backend;
     checkForHttpBackend(opts);
+
     backendIsInitialized = true;
     _.isFunction(definitionCallback) && definitionCallback();
     _.each(this.resources, function(resource) {
@@ -562,12 +568,19 @@
 
   function checkForHttpBackend(opts) {
     opts = opts || {};
-    Facade.backend = Facade.backend || opts.backend || {};
-    if (!_.isFunction(Facade.backend.whenGET)) {
+    var backend = opts.backend || {};
+    if (!_.isFunction(backend.whenGET)) {
       throw new Error(
-        "$httpBackend not detected. Either add it as an option when initializing, or set the" +
-        " attribute directly on Facade via Facade.backend = $httpBackend"
+        "$httpBackend not detected. You must add it when initializing, like Facade.initialize({backend: $httpBackend})"
       );
+    }
+  }
+
+  function checkIfAlreadyInitialized() {
+    if (backendIsInitialized) {
+      console.warn("Facade is already initialized. Generally this shouldn't happen. So everything will be cleared, and initialized again." +
+        " Thus, you shouldn't rely on any data added before the first initialization."
+      )
     }
   }
 
