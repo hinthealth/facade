@@ -370,6 +370,7 @@
     return {
       url: opts.url,
       name: opts.name,
+      createDefault: opts.createDefault,
       addItem: function(item) {
         checkForResourceId(item);
         getTable(this).create(item);

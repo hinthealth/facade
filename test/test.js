@@ -171,7 +171,11 @@
         Facade.define(function() {
           patientResource = Facade.resource({
             name: "patient",
-            url: "/api/provider/patients"
+            url: "/api/provider/patients",
+            createDefault: function(postData) {
+              var defaultPatient = {id: "pat-12345", name: "Joe Smith"};
+              return _.extend(defaultPatient, postData);
+            }
           });
           var practiceResource = Facade.resource({
             name: "practice",
@@ -231,10 +235,6 @@
           $rootScope.postedItem.should.eql({id: 3, name: "My new patient!"});
         });
         it("should use the create function when performing the POST route if it's there", function() {
-          patientResource.createDefault = function(postData) {
-            var defaultPatient = {id: "pat-12345", name: "Joe Smith"};
-            return _.extend(defaultPatient, postData);
-          };
           $rootScope.post("patients", {name: "My new patient!"});
           $httpBackend.flush();
           $rootScope.postedItem.should.eql({id: "pat-12345", name: "My new patient!"});

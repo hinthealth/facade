@@ -426,6 +426,7 @@ var Y=s();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(G.
     return {
       url: opts.url,
       name: opts.name,
+      createDefault: opts.createDefault,
       addItem: function(item) {
         checkForResourceId(item);
         getTable(this).create(item);
