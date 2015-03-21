@@ -291,24 +291,14 @@
         Facade.db.patient.find(1).should.eql({id: 1, name: "Joe Bob"});
       });
       it("should auto add rest routes for that patient", function() {
-        (function() {
-          $rootScope.getOne("patients", 2);
-          $httpBackend.flush();
-        }).should.throw(/Unexpected request/);
-
         patientResource.addItem({id: 2, name: "New Patient"});
 
         $rootScope.getOne("patients", 2);
         $httpBackend.flush();
 
         $rootScope.item.should.eql({id: 2, name: "New Patient"});
-
       });
       it("should auto add custom routes for that patient", function() {
-        (function() {
-          $rootScope.verifyPatient(patient1.id);
-          $httpBackend.flush();
-        }).should.throw(/Unexpected request/);
         patientResource.addRoute({
           method:"POST",
           route:"/verify",
