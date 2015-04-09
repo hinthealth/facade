@@ -3,9 +3,11 @@
 #### Installation:
 `bower install facade`
 
+include facade and lodash scripts from bower in your test framework
+
 
 #### The problem:
-  If you write a lot of angular tests, you probably have lots of similar whenGET's and whenPOST's, etc. sitting all over the place in your code. It's annoying, gross, and it discourages people from writing tests when there's a lot of boiler plate. Not to mention it makes it way harder to quickly understand the meaning of the tests, and honestly, you usually just don't care about that route, and you just want it to work. 
+  If you write a lot of angular tests, you probably have lots of similar whenGET's and whenPOST's, etc. sitting all over the place in your code. It's annoying, gross, and it discourages people from writing tests when there's a lot of boiler plate. Not to mention it makes it way harder to quickly understand the meaning of the tests, and honestly, you usually just don't care about that route, and you just want it to work.
 
 #### The solution:
 
@@ -90,7 +92,7 @@
 
 
 #### Basics:
-  
+
   **Adding your resources**
   (perhaps in a seperate mock file that you include with each test);
 
@@ -107,7 +109,7 @@
   })
   ```
   By creating the resource, Facade will automatically make all standard REST routes (index, create, and then get/:id, put/:id, and delete/:id).
-  
+
   `createDefault` is the function that will be called when create routes (POST /resource) are hit.
 
   **Adding your responses**
@@ -144,7 +146,7 @@
   **Nesting routes**
 
   You can take that resource you just made, and then nest another one under it, like so:
-  ``` 
+  ```
   var patientChargesResource = patientResource.resource({
     name: 'charge',
     url: '/charges'
@@ -167,7 +169,7 @@
         return [200, item, {}, 'OK'];
       },
       // this flag adds the route for every item in the db. eg. '/patients/1/verify'
-      onItem: true 
+      onItem: true
     });
   ```
   **notes about the addRoute options hash**
@@ -176,8 +178,8 @@
   `onItem`: If this flag is omitted, or set to false, it will create the route on the collection.
   eg. '/patients/verify';
 
-  `callback`: This is **required** and is meant to let you "perform the action" of the route. Very similar to whatever your real backend might do for this route. It also returns the response of the route. The response must be in standard angular form which is 
-  `[status, data, headers, status_text]`. 
+  `callback`: This is **required** and is meant to let you "perform the action" of the route. Very similar to whatever your real backend might do for this route. It also returns the response of the route. The response must be in standard angular form which is
+  `[status, data, headers, status_text]`.
   The callback is passed the request data, the appropriate database object (which is the item if it's an item route (eg. patients/3/verify), or the collection if it's a colleciton route (eg. patients/verify)). It's also passed the request headers.
 
 
