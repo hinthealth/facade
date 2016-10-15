@@ -1,6 +1,6 @@
 {
   "name": "facade",
-  "version": "0.4.10",
+  "version": "0.5.0",
   "description": "Front end testing helpers!",
   "main": "dist/facade.min.js",
   "scripts": {
