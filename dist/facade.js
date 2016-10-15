@@ -73,14 +73,14 @@
   Facade.findRoute = function(method, url) {
     var routeObj;
     var fullRoute = [method, url].join(' ');
-    var exists = _.any(facadeRoutes, function(resourceRoutes) {
+    var exists = _.some(facadeRoutes, function(resourceRoutes) {
       routeObj = resourceRoutes[fullRoute];
       if (routeObj) {
         return routeObj;
       }
       return routeObj = _.chain(resourceRoutes)
               .filter('regExp')
-              .where({method: method})
+              .filter({method: method})
               .find(function(route) {
                 return route.regExp.test(url);
               }).value();
@@ -337,7 +337,7 @@
         console.log("Unable to parse to JSON:", postData);
         return false;
       }
-      return _.all(expectedParams, function (expectedValue, expectedKey) {
+      return _.every(expectedParams, function (expectedValue, expectedKey) {
         return findParam(jsonData, expectedValue, expectedKey);
       });
     };
@@ -356,7 +356,7 @@
         console.log('Missing expectedKey', expectedKey, "in", nestedData, "should include", expectedParams);
         return false;
       }
-      return _.any(nested, function(json) {
+      return _.some(nested, function(json) {
         return findParam(json, expectedVal, expectedKey);
       });
     }
@@ -378,12 +378,6 @@
           createItemRoutesFor(this, item);
         }
         return item;
-      },
-      addItems: function(items) {
-        checkForArray(items);
-        _.each(items, function(item) {
-          this.addItem(item);
-        }, this);
       },
       resource: function(opts) {
         opts.url = this.url + opts.url;
@@ -533,7 +527,7 @@
     if (!_.isString(opts.url) ) {
       throw new Error("You must provide a url for the " + opts.name + " resource");
     }
-    var urls = _.pluck(Facade.resources, 'url');
+    var urls = _.map(Facade.resources, 'url');
     if ( _.find(urls, function(url) { return url === opts.url; }) ) {
       throw new Error("The url " + opts.url + " is already taken. Please change one");
     }
@@ -562,7 +556,7 @@
       throw new Error("No HTTP method was provided");
     }
     var httpVerbs = ['GET', 'POST', 'PATCH', 'PUT', 'HEAD', 'DELETE'];
-    if (!_.contains(httpVerbs, method)) {
+    if (!_.includes(httpVerbs, method)) {
       throw new Error(method + " is not a valid HTTP method.")
     }
   };

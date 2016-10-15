@@ -54,7 +54,7 @@
       it("should create a table in the database for that resource", function() {
         (function() {
           Facade.db.patient
-        }).should.be.undefined;
+        }).should.not.be.an.Object;
 
         Facade.resource({
           name: "patient",
@@ -315,30 +315,6 @@
         $httpBackend.flush();
 
         $rootScope.verifiedPatient.verified.should.eql(true);
-      });
-    });
-    describe("#addItems", function() {
-      var patientResource;
-      beforeEach(function() {
-        Facade.define(function() {
-          patientResource = Facade.resource({
-            name: "patient",
-            url: "/api/provider/patients"
-          });
-        });
-        createController();
-        Facade.initialize({backend: $httpBackend});
-      });
-      it("should take multiple objects and add them to the database for that resource", function() {
-        var items = [{id: 1, name: "Joe Bob"}, {id: 2, name: "Jane Bob"}];
-        patientResource.addItems(items);
-        Facade.db.patient.find(1).should.eql({id: 1, name: "Joe Bob"});
-        Facade.db.patient.find(2).should.eql({id: 2, name: "Jane Bob"});
-      });
-      it("should throw an error if an array is not given", function() {
-        (function() {
-          patientResource.addItems({id: 1});
-        }).should.throw(/array/);
       });
     });
     describe("#resource", function() {

@@ -117,8 +117,6 @@ include facade and lodash scripts from bower in your test framework
   ```
     var patient1 = {id: 'pat-2J8K', name: "New Patient"};
     patientResource.addItem(patient1);
-    // Or...
-    patientResource.addItems([patient1, patient2]);
   ```
   When adding items, Facade automatically creates routes based on that items id.
 
